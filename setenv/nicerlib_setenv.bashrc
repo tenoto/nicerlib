@@ -17,6 +17,8 @@ else
 	echo 'no corresponding computer setup.'
 fi
 
+export PATH="/Users/enoto/Dropbox/enoto/research/nicer/nisoft/ver3.00/local":$PATH
+
 echo ComputerName    = $NAME
 echo NICER_DATA_PATH = $NICER_DATA_PATH
 echo NICER_SOFT_PATH = $NICER_SOFT_PATH
