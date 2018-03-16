@@ -2,6 +2,10 @@ NUM_OF_MPU = 7
 NICER_PI_MIN = 0
 NICER_PI_MAX = 1500
 
+# Conversion from PI to keV (PI is in units of 10 eV)
+PI_TO_KEV = 10.0/1000.0
+KEV_TO_PI = 1000.0/10.0
+
 """
 EVENT_FLAGS == xxxxx1: "undershoot" reset
 EVENT_FLAGS == xxxx1x: "overshoot" reset

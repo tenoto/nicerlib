@@ -1,13 +1,15 @@
 import os 
 import sys 
 import yaml
+import glob 
 import pyfits
 
 from pyheasoft import * 
 from niconst import * 
 
 NICER_DATA_SUBDIRECTORY_LIST = ['auxil','log','xti'] 
-NICER_OUTPUT_SUBDIRS = ['proc/gti']
+NICER_OUTPUT_SUBDIRS = ['proc/gti','timing']
+NICER_YAML_KEYWORDS = ["title","outbase","overonly_lc_binsize","overonly_rate_thresholds","rmffile","arffile","ra","dec","ephem","pulse_search_overonly_threshold","pulse_search_emin_keV","pulse_search_emax_keV","lc_emin_keV","lc_emax_keV","lc_binsize"]
 
 class NicerObservation():
 	def __init__(self,obsid_path):
@@ -180,16 +182,20 @@ class NicerObservation():
 			cmd += 'fparkey %d %s+%d TLMAX10 add=yes\n' % (NICER_PI_MAX,self.overonly_evt,i)			
 			print(cmd);os.system(cmd)		
 
+	def run_barycentric_correction(self,ra,dec,ephem=""):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		self.clevt_bary = barycentric_correction(self.clevt_mpu7,self.orbfile,ra=ra,dec=dec,ephem=ephem)
+
+
 class NicerProcess():
 	def __init__(self,args):
 		if args.obsid_path[0] == '@':
 			self.flag_multimode = True
 			self.filename_obsid_path = args.obsid_path.split('@')[-1]
-			#self.set_obsid_list()
 		else:
 			self.flag_multimode = False
 			self.obsid_path = args.obsid_path
-			#self.obsid_list = [self.obsid]
 		self.fparam = args.fparam
 		self.outdir = args.outdir
 		self.title  = args.title 
@@ -265,12 +271,19 @@ class NicerProcess():
 		else:
 			self.param['outbase'] = self.outbase 
 
+		self.check_yaml_keywords()
+
+	def check_yaml_keywords(self):
+		for key in NICER_YAML_KEYWORDS:
+			if not self.param.has_key(key):
+				sys.stdout.write('yaml file does not have a keyword %s.\n' % key)
+				quit()
+
 	def set_nicer_observations(self):
 		self.niobs_list = []
 		for obsid_path in self.obsid_path_list:
 			self.niobs_list.append(NicerObservation(obsid_path))
 
-		"""
 		self.tstart = self.niobs_list[0].tstart
 		self.tstop  = self.niobs_list[-1].tstop
 		self.date_obs = self.niobs_list[0].date_obs
@@ -279,7 +292,6 @@ class NicerProcess():
 		self.dec_obj = self.niobs_list[0].dec_obj		
 		self.ra_nom = self.niobs_list[0].ra_nom
 		self.dec_nom = self.niobs_list[0].dec_nom
-		"""
 
 	def run_nicerl2(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -341,10 +353,6 @@ class NicerProcess():
 		self.overonly_curve = '%s/proc/%s_mgd_overonly.flc' % (self.outdir,self.param['outbase'])
 		xselect_extract_curve(self.overonlylist,self.overonly_curve,
 			self.param['overonly_lc_binsize'],pi_min=None,pi_max=None)
-		#cmd  = 'lcurve nser=1 cfile1=@%s '  % self.overonlylist
-		#cmd += 'window="-" dtnb=%d ' % self.param['overonly_lc_binsize']
-		#cmd += 'nbint=INDEF outfile=%s plot=no ' % self.overonly_curve
-		#print(cmd);os.system(cmd)
 
 		self.overonly_curve_timeoffset = '%s/proc/%s_mgd_overonly_tim.flc' % (self.outdir,self.param['outbase'])
 		cmd  = 'ftcalc infile=%s outfile=%s column=TIME expression="TIME+#TIMEZERO"\n' % (self.overonly_curve, self.overonly_curve_timeoffset)
@@ -409,7 +417,8 @@ class NicerProcess():
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
 		cmd  = 'nicerclean infile=%s outfile=%s ' % (self.merged_ufaevt,outevt)
-		cmd += 'gtifile=%s ' % ingti
+		if ingti != None:
+			cmd += 'gtifile=%s ' % ingti
 		print(cmd); os.system(cmd)
 
 	def prepare_gtifiles(self):
@@ -426,6 +435,7 @@ class NicerProcess():
 		
 		self.fgti_night_overcut_list = []
 		self.fgti_day_overcut_list   = []		
+		self.fgti_overcut_list   = []				
 		for over_rates in self.param['overonly_rate_thresholds']:
 			rate_min = over_rates[0]
 			rate_max = over_rates[1]	
@@ -440,7 +450,12 @@ class NicerProcess():
 			fgti_day = '%s/proc/gti/%s_day_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
 			self.fgti_day_overcut_list.append(fgti_day)
 			expr = "(SUNSHINE==1)&&(OVERONLY_RATE>%.3f)&&(OVERONLY_RATE<=%.3f)" % (rate_min,rate_max)
-			self.run_nimaketime(expr,fgti_day)			
+			self.run_nimaketime(expr,fgti_day)	
+
+			fgti = '%s/proc/gti/%s_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
+			self.fgti_overcut_list.append(fgti)
+			expr = "(OVERONLY_RATE>%.3f)&&(OVERONLY_RATE<=%.3f)" % (rate_min,rate_max)
+			self.run_nimaketime(expr,fgti)						
 
 	def show_gtifiles_exposure(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -466,103 +481,168 @@ class NicerProcess():
 		f.write(dump)
 		f.close()
 
-	def extract_cleaned_events_spectra(self):
+	def set_response_files(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
 		if os.getenv('NICER_RESP_PATH') != '':
-			rmffile = '%s/%s' % (os.getenv('NICER_RESP_PATH'),self.param['rmffile'])
-			arffile = '%s/%s' % (os.getenv('NICER_RESP_PATH'),self.param['arffile'])
+			self.rmffile = '%s/%s' % (os.getenv('NICER_RESP_PATH'),self.param['rmffile'])
+			self.arffile = '%s/%s' % (os.getenv('NICER_RESP_PATH'),self.param['arffile'])
 		else:
-			rmffile = None
-			arffile = None 
+			self.rmffile = None
+			self.arffile = None 
+
+	def extract_cleaned_events_spectra(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		dict_keywords = {"MRGSTART":self.date_obs,"MRGSTOP":self.date_end}
+
+		dict_keywords["FILTRCND"] = "standard"
+		self.merged_clevt = self.merged_ufaevt.replace('_ufa.evt','_cl.evt')
+		self.run_nicerclean(None,self.merged_clevt)
+		self.clpha_all = xselect_extract_spectrum(self.merged_clevt,
+			outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)		
 
 		if get_total_gti_exposure(self.fgti_night,flag_dump=False,extension_name='STDGTI') > 0.0:
+			dict_keywords["FILTRCND"] = "night-all"
 			self.clevt_night = self.fgti_night.replace('.gti','.evt')
 			self.run_nicerclean(self.fgti_night,self.clevt_night)
-			self.clpha_night = extract_spectrum(self.clevt_night,
-				outdir=None,rmffile=rmffile,arffile=arffile)			
+			self.clpha_night = xselect_extract_spectrum(self.clevt_night,
+				outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)	
 		if get_total_gti_exposure(self.fgti_day,flag_dump=False,extension_name='STDGTI') > 0.0:
+			dict_keywords["FILTRCND"] = "day-all"
 			self.clevt_day = self.fgti_day.replace('.gti','.evt')
 			self.run_nicerclean(self.fgti_day,self.clevt_day)
-			self.clpha_day = extract_spectrum(self.clevt_day,
-				outdir=None,rmffile=rmffile,arffile=arffile)
+			self.clpha_day = xselect_extract_spectrum(self.clevt_day,
+				outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)	
 		if get_total_gti_exposure(self.fgti_nicersaa,flag_dump=False,extension_name='STDGTI') > 0.0:
+			dict_keywords["FILTRCND"] = "nicersaa"
 			self.evt_nicersaa = self.fgti_nicersaa.replace('.gti','.evt')
 			self.run_nicerclean(self.fgti_nicersaa,self.evt_nicersaa)
-			self.clpha_day = extract_spectrum(self.clevt_day,
-				outdir=None,rmffile=rmffile,arffile=arffile)
+			self.pha_nicersaa = xselect_extract_spectrum(self.evt_nicersaa,
+				outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
 
 		for over_rates in self.param['overonly_rate_thresholds']:
 			rate_min = over_rates[0]
 			rate_max = over_rates[1]	
 			index = self.param['overonly_rate_thresholds'].index(over_rates)		
+
+			fgti = '%s/proc/gti/%s_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
+			if get_total_gti_exposure(fgti,flag_dump=False,extension_name='STDGTI') > 0.0:
+				dict_keywords["FILTRCND"] = "%.1e<over<=%.1e(all)" % (rate_min,rate_max)
+				clevt = fgti.replace('.gti','.evt')
+				self.run_nicerclean(fgti,clevt)
+				clpha = xselect_extract_spectrum(clevt,
+					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
 
 			fgti_night = '%s/proc/gti/%s_night_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
 			if get_total_gti_exposure(fgti_night,flag_dump=False,extension_name='STDGTI') > 0.0:
+				dict_keywords["FILTRCND"] = "%.1e<over<=%.1e(night)" % (rate_min,rate_max)
 				clevt_night = fgti_night.replace('.gti','.evt')
 				self.run_nicerclean(fgti_night,clevt_night)
-				clpha_night = extract_spectrum(clevt_night,
-					outdir=None,rmffile=rmffile,arffile=arffile)
+				clpha_night = xselect_extract_spectrum(clevt_night,
+					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
 
 			fgti_day = '%s/proc/gti/%s_day_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
 			if get_total_gti_exposure(fgti_day,flag_dump=False,extension_name='STDGTI') > 0.0:
+				dict_keywords["FILTRCND"] = "%.1e<over<=%.1e(day)" % (rate_min,rate_max)
 				clevt_day = fgti_day.replace('.gti','.evt')
 				self.run_nicerclean(fgti_day,clevt_day)
-				clpha_day = extract_spectrum(clevt_day,
-					outdir=None,rmffile=rmffile,arffile=arffile)
+				clpha_day = xselect_extract_spectrum(clevt_day,
+					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
 
-		"""
-		fgti_night_exp = get_total_gti_exposure(self.fgti_night,flag_dump=False,extension_name='STDGTI')
-		fgti_day_exp = get_total_gti_exposure(self.fgti_day,flag_dump=False,extension_name='STDGTI')
-		fgti_nicersaa_exp = get_total_gti_exposure(self.fgti_nicersaa,flag_dump=False,extension_name='STDGTI')		
-		print("----- Exposure ----- ")
-		print("                     : Night (sec)   Day (sec)")		
-		for over_rates in self.param['overonly_rate_thresholds']:
-			index = self.param['overonly_rate_thresholds'].index(over_rates)		
-			rate_min = over_rates[0]
-			rate_max = over_rates[1]	
-			exp_night = get_total_gti_exposure(self.fgti_night_overcut_list[index],flag_dump=False,extension_name='STDGTI')		
-			exp_day = get_total_gti_exposure(self.fgti_day_overcut_list[index],flag_dump=False,extension_name='STDGTI')					
-			print("Band-%d (%.1f-%.1f cps): %.1f      %.1f" % (index, rate_min, rate_max, exp_night, exp_day))
-		print("Total                : %.1f      %.1f" % (fgti_night_exp,fgti_day_exp))
-		print("NICER SAA: %.1f (s)" % fgti_nicersaa_exp)		
-		"""			
-
-
-
-	"""
-	def nimaketime(self,recreate=True):
+	def plot_spectrum(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		self.gtibase = '%s' % (os.path.splitext(os.path.basename(self.fparam))[0])
-		self.gtifile = '%s/proc/%s.gti' % (self.outdir, self.gtibase)
-		if os.path.exists(self.gtifile) and recreate:
-			cmd = 'rm -f %s' % self.gtifile
-			print(cmd); os.system(cmd)
-		cmd  = 'nimaketime '
-		cmd += 'infile=%s ' % self.merged_mkffile
-		cmd += 'outfile=%s ' % self.gtifile	
-		for key in NIMAKETIME_KEYS:
-			#if self.param.has_key(key):
-			if key in self.param:
-				cmd += '%s=%s ' % (key,self.param[key])
-		#if self.param.has_key("expr"):
-		if "expr" in self.param:			
-			cmd += 'expr="%s" ' % self.param["expr"]
-		if not "cor_range" in self.param:
-			self.param["cor_range"] = ""
-		else:
-			self.param["expr"]=""
+		for phafile in glob.glob('%s/proc/gti/*.pha' % self.outdir):
+			hdu = pyfits.open(phafile)
+			exposure = float(hdu['SPECTRUM'].header['EXPOSURE'])
+			otitle = "%s (%.3f ks)" % (phafile, exposure/1000.0)
+			title  = ""
+			ftitle = "%s (%s...%s)" % (hdu['SPECTRUM'].header['FILTRCND'],
+				hdu['SPECTRUM'].header['MRGSTART'],hdu['SPECTRUM'].header['MRGSTOP'])
+			plot_xspec_spectrum(phafile,otitle=otitle,title=title,ftitle=ftitle)
 
-		#if self.param.has_key("nicersaafilt"):			
-		if "nicersaafilt" in self.param:
-			cmd += 'nicersaafilt=%s ' % self.param["nicersaafilt"]
-		print(cmd); os.system(cmd)
-	"""		
+		for phafile in glob.glob('%s/proc/*.pha' % self.outdir):
+			hdu = pyfits.open(phafile)
+			exposure = float(hdu['SPECTRUM'].header['EXPOSURE'])
+			otitle = "%s (%.3f ks)" % (phafile, exposure/1000.0)
+			title  = ""
+			ftitle = "%s (%s...%s)" % (hdu['SPECTRUM'].header['FILTRCND'],
+				hdu['SPECTRUM'].header['MRGSTART'],hdu['SPECTRUM'].header['MRGSTOP'])
+			plot_xspec_spectrum(phafile,otitle=otitle,title=title,ftitle=ftitle)
+
+	def run_barycentric_correction(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		self.clevt_bary_lst = '%s/timing/%s_clevt_bary.lis' % (self.outdir,self.param['outbase'])
+		f = open(self.clevt_bary_lst,'w')
+		for niobs in self.niobs_list:
+			niobs.run_barycentric_correction(ra=self.param['ra'],dec=self.param['dec'],ephem=self.param['ephem'])
+			sys.stdout.write('%s\n' % niobs.clevt_bary)
+			f.write('%s\n' % niobs.clevt_bary)
+		f.close()		
+
+	def extract_lowbackground_data(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		self.fgti_lowbgd = '%s/timing/%s_lowbgd.gti' % (self.outdir,self.param['outbase']) 
+		expr = "OVERONLY_RATE<=%.3f" % self.param['pulse_search_overonly_threshold']
+		self.run_nimaketime(expr,self.fgti_lowbgd)	
+
+		self.flag_lowbgd_data = False 
+		if get_total_gti_exposure(self.fgti_lowbgd,flag_dump=False,extension_name='STDGTI') > 0.0:
+			self.flag_lowbgd_data = True
+			self.clevt_lowbgd = self.fgti_lowbgd.replace('.gti','.evt')
+			self.run_nicerclean(self.fgti_lowbgd,self.clevt_lowbgd)
+			self.clpha_lowbgd = xselect_extract_spectrum(self.clevt_lowbgd,
+				outdir=None,rmffile=self.rmffile,arffile=self.arffile)	
+			self.clevt_lowbgd_bary = barycentric_correction(self.clevt_lowbgd,self.merged_orbfile,
+				ra=self.param['ra'],dec=self.param['dec'],ephem=self.param['ephem'])
+			self.clevt_lowbgd_bary_esel = nicer_fselect_energy(self.clevt_lowbgd_bary,
+				emin_keV=self.param['pulse_search_emin_keV'],emax_keV=self.param['pulse_search_emax_keV'])
+
+			self.clflc_lowbgd = '%s_%sto%skeV_%ds.flc' % (os.path.splitext(self.clevt_lowbgd)[0],
+				str(self.param['lc_emin_keV']).replace('.','p'),
+				str(self.param['lc_emax_keV']).replace('.','p'),
+				self.param['lc_binsize'])
+			xselect_extract_curve(self.clevt_lowbgd,self.clflc_lowbgd,
+				self.param['lc_binsize'],
+				pi_min=KEV_TO_PI*self.param['lc_emin_keV'],
+				pi_max=KEV_TO_PI*self.param['lc_emax_keV'])
+			plot_curve(self.clflc_lowbgd)
+
+	def plot_curve(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+		self.merged_clflc_esel = '%s_%sto%skeV_%ds.flc' % (os.path.splitext(self.merged_clevt)[0],
+			str(self.param['lc_emin_keV']).replace('.','p'),
+			str(self.param['lc_emax_keV']).replace('.','p'),
+			self.param['lc_binsize'])
+		xselect_extract_curve(self.merged_clevt,self.merged_clflc_esel,
+			self.param['lc_binsize'],
+			pi_min=KEV_TO_PI*self.param['lc_emin_keV'],
+			pi_max=KEV_TO_PI*self.param['lc_emax_keV'])
+		plot_curve(self.merged_clflc_esel)
+
+	def save_setup(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		if self.flag_multimode:
+			cmd = 'cp %s %s ' % (self.filename_obsid_path,self.outdir)
+			print(cmd);os.system(cmd)
+		else:
+			f = open('%s/input.lst' % self.outdir,'w')
+			f.write('%s\n' % args.obsid_path)
+			f.close()
+
+		fparam_out = '%s/%s' % (self.outdir, os.path.basename(self.fparam))
+		f = open(fparam_out,'w')
+		f.write(yaml.dump(self.param))
+		f.close()
 
 	def run(self):
 		sys.stdout.write('--run--\n')
 
+		# Initialization 
 		self.show_input_parameters()
 		self.set_obsid_path_list()
 		self.show_obsid_path_list()
@@ -570,6 +650,8 @@ class NicerProcess():
 		self.load_parameterfile()
 		self.show_input_parameters()
 		self.set_nicer_observations()
+		self.set_response_files()
+		# Main process 
 		self.run_nicerl2()
 		self.merge_mkffiles()
 		self.merge_orbfiles()
@@ -580,5 +662,14 @@ class NicerProcess():
 		self.prepare_gtifiles()
 		self.show_gtifiles_exposure()
 		self.extract_cleaned_events_spectra()
+		self.plot_spectrum()
+		self.plot_curve()
+		# HK check
+		# 
+		# Timing 
+		self.run_barycentric_correction() # for individual ObsID
+		self.extract_lowbackground_data() # for merged data 
+		# End 
+		self.save_setup()
 
 
