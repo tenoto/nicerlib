@@ -1,7 +1,0 @@
-title: test 
-outbase: sample
-overonly_lc_binsize: 10
-#overonly_rate_thresholds: [[0.0,1000000000],[0.0,5.0],[5.0,10.0],[10.0,30.0],[30.0,1000000000]]
-overonly_rate_thresholds: [[0.0,10.0],[10.0,100.0],[100.0,1000.0],[1000.0,10000.0],[10000.0,1000000000]]
-rmffile: nicer_v1.02.rmf
-arffile: ni_xrcall_onaxis_v1.02.arf
