@@ -1,0 +1,15 @@
+title: SGR_0501+4516 
+outbase: sgr0501
+overonly_lc_binsize: 100
+overonly_rate_thresholds: [[0.0,30.0],[0.0,10.0],[10.0,30.0],[30.0,50.0],[50.0,70.0],[70.0,100.0],[100.0,1000.0],[1000.0,10000.0],[10000.0,1000000000]]
+rmffile: nicer_v1.02.rmf
+arffile: ni_xrcall_onaxis_v1.02.arf
+ra: 75.278167
+dec: 45.276089
+ephem: "refframe=ICRS ephem=JPLEPH.430"
+pulse_search_overonly_threshold: 30.0
+pulse_search_emin_keV: 0.8
+pulse_search_emax_keV: 3.0
+lc_emin_keV: 0.8
+lc_emax_keV: 3.0
+lc_binsize: 100
