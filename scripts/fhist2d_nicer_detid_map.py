@@ -26,6 +26,16 @@ plt.rcParams['axes.ymargin'] = '.2'
 RAWX_MAX = 7
 RAWY_MAX = 6
 
+RAWXY_TO_DET_ID = [
+	[ '57', '47', '37', '27', '17', '16', '07', '06'],
+	[ '56', '46', '36', '35', '26', '25', '15', '05'],
+	[ '55', '54', '45', '44', '34', '24', '14', '04'],
+	[ '67', '66', '53', '43', '33', '23', '13', '03'],
+	[ '65', '64', '52', '42', '32', '22', '12', '02'],
+	[ '63', '62', '51', '41', '31', '21', '11', '01'],
+	[ '61', '60', '50', '40', '30', '20', '10', '00']
+	]
+
 parser = OptionParser()
 parser.add_option("-i","--inputfits",dest="inputfits",
 	action="store",help="input fits file",type="string")
@@ -85,15 +95,21 @@ fig = plt.figure(figsize=(14,10))
 ax  = fig.add_subplot(111)
 plt.xlabel('RAWX')
 plt.ylabel('RAWY')
-plt.title('title')
+plt.title(options.title)
 img = ax.imshow(hist2d,interpolation="nearest",origin="upper")
 for i, cas in enumerate(hist2d):
 	for j, c in enumerate(cas):
 		if c>0:
-			plt.text(j-.2, i+.2, c, fontsize=14)
+			plt.text(j-.2, i-.15, 'ID%s' % RAWXY_TO_DET_ID[i][j], fontsize=14, color='white')
+			plt.text(j-.2, i+.2, '%d' % c, fontsize=14, color='white')
+		else:
+			plt.text(j-.2, i-.15, 'ID%s' % RAWXY_TO_DET_ID[i][j], fontsize=14, color='white')
+			plt.text(j-.2, i+.2, 'ND', fontsize=14, color='white')
 cb = fig.colorbar(img)
 fig.savefig(options.outputpdf,dpi=200)
 
 cmd = 'rm -f %s' % (f_tmpsel)
 print(cmd);os.system(cmd)
+
+print("open %s" % options.outputpdf)
 
