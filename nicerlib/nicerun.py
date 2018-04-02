@@ -150,6 +150,25 @@ class NicerObservation():
 		self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
 		self.ufaevt_mpu7 = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (self.obsid_path, self.obsid)		
 
+	def run_niprefilter2(self):
+		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
+
+		niprefilter2_outfile = '%s.mkf2' % os.path.splitext(self.mkffile.replace('.gz',''))[0]
+		cmd  = 'rm -f %s.gz %s\n' % (niprefilter2_outfile,niprefilter2_outfile)
+		print(cmd);os.system(cmd)
+
+		cmd  = 'niprefilter2 '
+		cmd += 'indir=%s ' % self.obsid_path
+		cmd += 'infile=%s ' % self.mkffile
+		cmd += 'outfile=%s  ' % niprefilter2_outfile
+		print(cmd);os.system(cmd)
+
+		cmd  = 'gzip %s\n' % niprefilter2_outfile
+		print(cmd);os.system(cmd)
+
+		self.mkffile = '%s.gz' % niprefilter2_outfile
+
+	"""
 	def extract_overonly_event(self,flag_clean=True):
 		'Extract OVERHOOT Only count'
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -181,6 +200,39 @@ class NicerObservation():
 			cmd  = 'fparkey %d %s+%d TLMIN10 add=yes\n' % (NICER_PI_MIN,self.overonly_evt,i)
 			cmd += 'fparkey %d %s+%d TLMAX10 add=yes\n' % (NICER_PI_MAX,self.overonly_evt,i)			
 			print(cmd);os.system(cmd)		
+
+	def extract_energy_selected_xrayevent(self,emin,emax,flag_clean=True):
+		'Extract energy-selected X-ray events'
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		expr = '(EVENT_FLAGS==bx1x000)'
+		fname_inputfiles = '%s/ni%s_0mpu7_eselxray.lst' % (self.evtcl_dir,self.obsid)
+		f = open(fname_inputfiles,'w')
+		for mpunum in range(NUM_OF_MPU):
+			uffile = '%s/ni%s_0mpu%d_uf.evt.gz[%s]' % (self.evtuf_dir,self.obsid,mpunum,expr)
+			f.write('%s\n' % uffile)
+		f.close()
+
+		outevt = '%s/tmp_ni%s_0mpu7_eselxray.evt' % (self.evtcl_dir,self.obsid)
+		cmd = 'ftmerge @%s %s clobber=yes\n' % (fname_inputfiles,outevt)
+		print(cmd);os.system(cmd)
+
+		self.eselxray_evt = '%s/ni%s_0mpu7_eselxray.evt' % (self.evtcl_dir,self.obsid)
+		cmd = 'niextract-events %s %s timefile=%s[GTI] clobber=yes\n' % (outevt,self.eselxray_evt,self.clevt_mpu7)
+		print(cmd);os.system(cmd)		
+
+		if flag_clean:
+			cmd = 'rm -f %s' % outevt
+			print(cmd);os.system(cmd)
+
+		cmd = 'ftcalc %s %s PI 0 clobber=yes' % (self.overonly_evt,self.overonly_evt)
+		print(cmd);os.system(cmd)		
+
+		for i in range(3):
+			cmd  = 'fparkey %d %s+%d TLMIN10 add=yes\n' % (NICER_PI_MIN,self.overonly_evt,i)
+			cmd += 'fparkey %d %s+%d TLMAX10 add=yes\n' % (NICER_PI_MAX,self.overonly_evt,i)			
+			print(cmd);os.system(cmd)	
+	"""
 
 	def run_barycentric_correction(self,ra,dec,ephem=""):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -298,10 +350,18 @@ class NicerProcess():
 		for niobs in self.niobs_list:
 			niobs.run_nicerl2()
 
+	def run_niprefilter2(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+		for niobs in self.niobs_list:
+			niobs.run_niprefilter2()
+
+	"""
 	def extract_overonly_event(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 		for niobs in self.niobs_list:
 			niobs.extract_overonly_event()
+	"""
+
 	"""
 	def set_title(self):
 		if len(self.niobs_list) == 1:
@@ -340,6 +400,7 @@ class NicerProcess():
 		cmd = 'ftmerge infile=@%s outfile=%s' % (self.orblist,self.merged_orbfile)
 		print(cmd); os.system(cmd)		
 
+	"""
 	def extract_overonly_curve(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -363,7 +424,9 @@ class NicerProcess():
 		cmd += 'fdelcol %s+1 colname="ERROR" confirm=no proceed=yes\n'	% self.overonly_curve_timeoffset	
 		cmd += 'fdelcol %s+1 colname="FRACEXP" confirm=no proceed=yes\n'	% self.overonly_curve_timeoffset					
 		print(cmd); os.system(cmd)
+	"""
 
+	"""
 	def interporation_overonly2mkf(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -379,6 +442,7 @@ class NicerProcess():
 		cmd += 'comm="over-only light curve bin size (sec)" '
 		cmd += 'add=yes '
 		print(cmd); os.system(cmd)			
+	"""
 
 	def run_nimaketime(self,expr,outgti):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -421,6 +485,7 @@ class NicerProcess():
 			cmd += 'gtifile=%s ' % ingti
 		print(cmd); os.system(cmd)
 
+	"""
 	def prepare_gtifiles(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -456,7 +521,9 @@ class NicerProcess():
 			self.fgti_overcut_list.append(fgti)
 			expr = "(OVERONLY_RATE>%.3f)&&(OVERONLY_RATE<=%.3f)" % (rate_min,rate_max)
 			self.run_nimaketime(expr,fgti)						
+	"""
 
+	"""	
 	def show_gtifiles_exposure(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -480,6 +547,7 @@ class NicerProcess():
 		f = open(self.fgti_result,'w')
 		f.write(dump)
 		f.close()
+	"""
 
 	def set_response_files(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -491,6 +559,7 @@ class NicerProcess():
 			self.rmffile = None
 			self.arffile = None 
 
+	"""
 	def extract_cleaned_events_spectra(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -549,7 +618,9 @@ class NicerProcess():
 				self.run_nicerclean(fgti_day,clevt_day)
 				clpha_day = xselect_extract_spectrum(clevt_day,
 					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
+	"""
 
+	"""
 	def plot_spectrum(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -570,6 +641,7 @@ class NicerProcess():
 			ftitle = "%s (%s...%s)" % (hdu['SPECTRUM'].header['FILTRCND'],
 				hdu['SPECTRUM'].header['MRGSTART'],hdu['SPECTRUM'].header['MRGSTOP'])
 			plot_xspec_spectrum(phafile,otitle=otitle,title=title,ftitle=ftitle)
+	"""
 
 	def run_barycentric_correction(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -582,6 +654,7 @@ class NicerProcess():
 			f.write('%s\n' % niobs.clevt_bary)
 		f.close()		
 
+	"""
 	def extract_lowbackground_data(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -610,7 +683,9 @@ class NicerProcess():
 				pi_min=KEV_TO_PI*self.param['lc_emin_keV'],
 				pi_max=KEV_TO_PI*self.param['lc_emax_keV'])
 			plot_curve(self.clflc_lowbgd)
-
+	"""
+	
+	"""
 	def plot_curve(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 		self.merged_clflc_esel = '%s_%sto%skeV_%ds.flc' % (os.path.splitext(self.merged_clevt)[0],
@@ -622,6 +697,7 @@ class NicerProcess():
 			pi_min=KEV_TO_PI*self.param['lc_emin_keV'],
 			pi_max=KEV_TO_PI*self.param['lc_emax_keV'])
 		plot_curve(self.merged_clflc_esel)
+	"""
 
 	def save_setup(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -631,7 +707,7 @@ class NicerProcess():
 			print(cmd);os.system(cmd)
 		else:
 			f = open('%s/input.lst' % self.outdir,'w')
-			f.write('%s\n' % args.obsid_path)
+			f.write('%s\n' % self.obsid_path)
 			f.close()
 
 		fparam_out = '%s/%s' % (self.outdir, os.path.basename(self.fparam))
@@ -653,18 +729,51 @@ class NicerProcess():
 		self.set_response_files()
 		# Main process 
 		self.run_nicerl2()
+		self.run_niprefilter2()
 		self.merge_mkffiles()
 		self.merge_orbfiles()
 		self.merge_ufafiles()
-		self.extract_overonly_event()		
-		self.extract_overonly_curve()
-		self.interporation_overonly2mkf()
-		self.prepare_gtifiles()
-		self.show_gtifiles_exposure()
-		self.extract_cleaned_events_spectra()
-		self.plot_spectrum()
-		self.plot_curve()
-		# HK check
+		#self.extract_overonly_event()         # Teru's method 		
+		#self.extract_overonly_curve()         # Teru's method 		
+		#self.interporation_overonly2mkf()     # Teru's method 		
+		#self.prepare_gtifiles()               # Teru's method 		
+		#self.show_gtifiles_exposure()         # Teru's method 		
+		#self.extract_cleaned_events_spectra() # Teru's method 		
+		#self.plot_spectrum()                  
+		#self.plot_curve()                    
+		# 
+		# Timing 
+		self.run_barycentric_correction() # for individual ObsID
+		#self.extract_lowbackground_data() # for merged data 
+		# End 
+		self.save_setup()
+
+	def run_org180319(self):
+		sys.stdout.write('--run--\n')
+
+		# Initialization 
+		self.show_input_parameters()
+		self.set_obsid_path_list()
+		self.show_obsid_path_list()
+		self.make_output_directory()
+		self.load_parameterfile()
+		self.show_input_parameters()
+		self.set_nicer_observations()
+		self.set_response_files()
+		# Main process 
+		self.run_nicerl2()
+		self.run_niprefilter2()
+		self.merge_mkffiles()
+		self.merge_orbfiles()
+		self.merge_ufafiles()
+		self.extract_overonly_event()         # Teru's method 		
+		self.extract_overonly_curve()         # Teru's method 		
+		self.interporation_overonly2mkf()     # Teru's method 		
+		self.prepare_gtifiles()               # Teru's method 		
+		self.show_gtifiles_exposure()         # Teru's method 		
+		self.extract_cleaned_events_spectra() # Teru's method 		
+		self.plot_spectrum()                  
+		self.plot_curve()                    
 		# 
 		# Timing 
 		self.run_barycentric_correction() # for individual ObsID
