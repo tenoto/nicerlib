@@ -53,9 +53,9 @@ if options.inputfits == None:
 if options.outputpdf == None:	
 	print "output pdf file is needed. %> -o outputpdf"
 	quit()
-if options.expression == None:
-	print "expression is need. %> -e expression"
-	quit()
+#if options.expression == None:
+#	print "expression is need. %> -e expression"
+#	quit()
 print "inputfits : %s " % options.inputfits
 print "outputpdf: %s " % options.outputpdf
 print "expression: %s " % options.expression
@@ -74,8 +74,12 @@ f_tmpsel = 'tmpsel_%s.fits' % basename
 cmd = 'rm -f %s' % (f_tmpsel)
 print(cmd);os.system(cmd)
 
-cmd = 'fselect %s %s "%s"' % (options.inputfits,f_tmpsel,options.expression)
-print(cmd);os.system(cmd)
+if options.expression == None:
+	cmd = 'cp %s %s' % (options.inputfits,f_tmpsel)
+	print(cmd);os.system(cmd)
+else:
+	cmd = 'fselect %s %s "%s"' % (options.inputfits,f_tmpsel,options.expression)
+	print(cmd);os.system(cmd)
 
 hist2d = np.zeros([RAWY_MAX+1,RAWX_MAX+1])
 print(hist2d)
