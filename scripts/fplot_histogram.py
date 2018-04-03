@@ -5,6 +5,9 @@ __author__  = 'Teruaki Enoto'
 __version__ = '1.00'
 __date__    = '2018 April 2'
 
+PLOT_DEV = '/dev/null'
+#PLOT_DEV = '/xw'
+
 import os 
 import sys 
 #cmd  = 'fhisto %s %s'
@@ -15,6 +18,8 @@ from optparse import OptionParser
 parser = OptionParser()
 parser.add_option("-x", "--logx", action="store_true", dest="logx", default=False)
 parser.add_option("-y", "--logy", action="store_true", dest="logy", default=False)
+parser.add_option("-f","--filter",dest="filter",default=None,
+        action="store",help="filter expression",type="string")
 (options, args) = parser.parse_args()
 
 if len(args) != 6:
@@ -38,13 +43,23 @@ ftmp_histo = '%s.fht' % os.path.splitext(outpdf)[0]
 cmd = 'rm -f %s' % ftmp_histo
 print(cmd);os.system(cmd)
 
-cmd  = 'fhisto infile=%s outfile=%s ' % (infits,ftmp_histo)
+if options.filter != None:
+	tmp_infits = 'tmp_%s.fits' % os.path.splitext(os.path.basename(infits))[0]
+	cmd = 'rm -f %s' % tmp_infits
+	print(cmd);os.system(cmd)	
+	cmd = 'fselect %s %s expr="%s" ' % (infits, tmp_infits, options.filter)
+	print(cmd);os.system(cmd)
+
+if options.filter != None:
+	cmd  = 'fhisto infile=%s outfile=%s ' % (tmp_infits,ftmp_histo)
+else:	
+	cmd  = 'fhisto infile=%s outfile=%s ' % (infits,ftmp_histo)
 cmd += 'column=%s binsz=%.6f lowval=%.6f highval=%.6f ' % (colname,float(maxv-minv)/float(nbin),minv,maxv)
 cmd += 'outcolx=%s outcoly=NUMBERS ' % (colname)
 print(cmd);os.system(cmd)
 
 ftmp_ps = '%s.ps' % os.path.splitext(outpdf)[0]
-cmd  = 'fplot %s %s NUMBERS - /xw @ <<EOF\n' % (ftmp_histo,colname)
+cmd  = 'fplot %s %s NUMBERS - %s @ <<EOF\n' % (ftmp_histo,colname,PLOT_DEV)
 cmd += 'la t %s\n' % infits
 cmd += 'lwid 5 \n'
 cmd += 'time off\n'
@@ -66,3 +81,6 @@ print(cmd);os.system(cmd)
 cmd = 'rm -f %s %s' % (ftmp_histo,ftmp_ps)
 print(cmd);os.system(cmd)
 
+if options.filter != None:
+	cmd = 'rm -f %s' % tmp_infits
+	print(cmd);os.system(cmd)
