@@ -28,6 +28,12 @@ if options.inputevtfits == None:
 if options.outputevtfits == None:	
 	print "output lc file is needed. %> -o outputevtfits"
 	quit()
+if options.tstart == None:	
+	print "tstart is needed. %> -o tstart"
+	quit()
+if options.tstop == None:	
+	print "tstop is needed. %> -o tstop"
+	quit()
 
 print "input event fits file  : %s " % options.inputevtfits
 print "output event fits file : %s " % options.outputevtfits	
