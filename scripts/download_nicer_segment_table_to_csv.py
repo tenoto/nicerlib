@@ -38,4 +38,8 @@ if req.status_code != 200:
 soup = BeautifulSoup(req.text,'lxml')
 tabs = soup.find_all('table')[1]
 df = pd.read_html(str(tabs))[0]
+df['Observation ID'] = df['Observation ID'].astype(str).str.zfill(10)
 df.to_csv(options.outcsvfile)
+
+
+
