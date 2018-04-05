@@ -69,6 +69,9 @@ for n,[no, row] in enumerate(source.iterrows()):
 		cmd = 'tar zxvf %s;' % tarfile 
 		print(cmd);os.system(cmd)
 
+		cmd = 'rm -f %s' % tarfile
+		print(cmd);os.system(cmd)
+		
 		target_dir = '%s/%s' % (os.getenv('NICER_PUBLIC_DATA_PATH'),yyyy_mm)
 		if not os.path.exists(target_dir):
 			cmd = 'mkdir -p %s' % target_dir
