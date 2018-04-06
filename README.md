@@ -7,18 +7,21 @@ To use these scripts add <basedir>/nicerlib/scripts to your PATH and add <basedi
 ## installation
 It is recommended to construct the nicerlib setups under 'pyenv' environments to avoid conflict of python library versions. Followings are an installation example.
 
-> git clone git://github.com/yyuu/pyenv.git ~/.pyenv
->
-> echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
-> echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
-> echo 'eval "$(pyenv init -)"' >> ~/.zshrc
-> 
-> pyenv install 2.7.14
-> pyenv rehash
-> 
-> pyenv global 2.7.14
-> pyenv versions 
-> which python
+```
+git clone git://github.com/yyuu/pyenv.git ~/.pyenv
+
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
+echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
+echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+
+pyenv install 2.7.14
+pyenv rehash
+ 
+pyenv global 2.7.14
+pyenv versions 
+which python
+pyenv which python2.7
+```
 
 
 pip install --upgrade pip
