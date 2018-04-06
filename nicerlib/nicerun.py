@@ -133,22 +133,25 @@ class NicerObservation():
 		sys.stdout.write('OBJECT   : %s\n' % self.object)		
 		sys.stdout.write('TOTAL_GTI_EXPOSURE : %.3f (s)\n' % self.ufmpu0_total_gti_exposure)
 
-	def run_nicerl2(self):
+	def run_nicerl2(self,flag_skip=False):
 		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
 
-		if os.path.exists(self.evtcl_dir):
-			cmd = 'rm -f %s/*' % self.evtcl_dir
+		if flag_skip:
+			print("skip of run_nicerl2")
+		else:
+			if os.path.exists(self.evtcl_dir):
+				cmd = 'rm -f %s/*' % self.evtcl_dir
+				print(cmd);os.system(cmd)
+
+			cmd = 'nicerl2 %s' % self.obsid_path
+			print(cmd);os.system(cmd)	
+
+			cmd  = 'gzip %s\n' % (self.clevt_mpu7.replace('.gz',''))
+			cmd += 'gzip %s\n' % (self.ufaevt_mpu7.replace('.gz',''))
 			print(cmd);os.system(cmd)
 
-		cmd = 'nicerl2 %s' % self.obsid_path
-		print(cmd);os.system(cmd)	
-
-		cmd  = 'gzip %s\n' % (self.clevt_mpu7.replace('.gz',''))
-		cmd += 'gzip %s\n' % (self.ufaevt_mpu7.replace('.gz',''))
-		print(cmd);os.system(cmd)
-
-		self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
-		self.ufaevt_mpu7 = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (self.obsid_path, self.obsid)		
+			self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
+			self.ufaevt_mpu7 = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (self.obsid_path, self.obsid)		
 
 	def run_niprefilter2(self):
 		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
