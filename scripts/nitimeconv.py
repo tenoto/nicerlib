@@ -36,7 +36,7 @@ XMM/Chandra seconds since 1998.0 TT (decimal)		504921667.184
 
 usage = """ 
 NAME 
-	nitimeconv - Convert mission time in different time format and scale 
+	nitimeconv - Convert mission time into a different time format and scale 
 
 USAGE 
 	%prog intime -f format -s scale 
@@ -52,6 +52,8 @@ DESCRIPTION
 	seconds since the epoch 2014-01-01T00:00:00 UTC (corresponding with 56658.00077759
 	MJD_TT). Conversion of the NICER timestamps to absolute time in MJD can be done by 
 		MJD_TT = MJDREFI+MJDREFF+(TIMEZERO+TIME)/ 86400
+	The NICER MET is compared with METs of other X-ray mission (Chandra/XMM, RXTE,
+	Fermi, and Suzaku). 
 
 
 EXAMPLES
@@ -77,7 +79,10 @@ parser.add_option("-s","--scale",dest="scale",default="met",
        action="store",help="Time scale, any of (utc or tt)",type="string")
 (options, args) = parser.parse_args()
 
-
+if len(args) != 1:
+	print("try: %s.py --help" % __name__)
+	print("usage: %s.py intime -f fomrat -s scale" % __name__)	
+	quit()
 input_value = args[0]
 
 dump  = "----- Input Time Value and Formats -----\n"
