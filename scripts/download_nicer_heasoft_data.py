@@ -14,12 +14,15 @@ import sys
 from optparse import OptionParser
 import pandas as pd
 import datetime 
+import subprocess
 
 parser = OptionParser()
 parser.add_option("-c","--inputcsv",dest="inputcsv",
         action="store",help="Input NICER segment table (CSV format)",type="string")
 parser.add_option("-k","--flag_kyoto",action="store_true",dest="flag_kyoto", default=True)
 parser.add_option("-m","--flag_move",action="store_true",dest="flag_move", default=True)
+parser.add_option("-s","--skip_yyyymm_list",dest="skip_yyyymm_list",default=None,
+        action="store",help="skip list of [yyyymm], e.g., \"[2018_02,2018_03]\"",type="string")
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
@@ -32,11 +35,12 @@ if not os.path.exists(options.inputcsv):
 	quit()
 
 df = pd.DataFrame.from_csv(options.inputcsv)
+df['Observation ID'] = df['Observation ID'].astype(str).str.zfill(10)
 
 if args[0].isdigit():
 	mode_obsid = True 
 	target_obsid = str(args[0])
-	source = df[df['Observation ID'] == int(target_obsid)]
+	source = df[df['Observation ID'] == str(target_obsid)]
 	print("Target ObsID mode: {}".format(target_obsid))	
 else:
 	mode_obsid = False
@@ -45,6 +49,7 @@ else:
 	print("Target Name mode: {}".format(target_name))	
 #print(source)
 
+skip_yyyymm_list = list(options.skip_yyyymm_list.replace('[','').replace(']','').split(','))
 
 for n,[no, row] in enumerate(source.iterrows()):
 	# Extract the relevant columns
@@ -56,29 +61,41 @@ for n,[no, row] in enumerate(source.iterrows()):
 	srcname = row['Target Name']
 	tarfile = '%s.tar' % obsid
 
+	if yyyy_mm in skip_yyyymm_list:
+		print("... skip yyyy_mm.")
+		continue
+
 	download_path = '%s/%s/%s ' % (FTPPATH_NICER_DATA, yyyy_mm, tarfile)
 	dump = '%s %s  %s  %.1f (s) %s\n' % (srcname,obsid,dtime,gexpo, download_path)
 	sys.stdout.write(dump)
 
-	cmd  = 'curl -O %s' % download_path
+	target_dir = '%s/%s' % (os.getenv('NICER_PUBLIC_DATA_PATH'),yyyy_mm)
+	cmd  = 'curl -f -O %s' % download_path
 	if options.flag_kyoto: 
 		cmd += '-x ftp-proxy.kuins.net:8080 --proxy-user anonymous:'
+	if os.path.exists('%s/%s' % (target_dir,obsid)):
+		print("...skip, direcotry already exists...")
+		continue 
 	print(cmd);os.system(cmd)
+	#resp = subprocess.Popen(cmd.split(' '),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+	#print(resp.stderr.readlines())
 
 	if options.flag_move:
-		cmd = 'tar zxvf %s;' % tarfile 
-		print(cmd);os.system(cmd)
-
-		cmd = 'rm -f %s' % tarfile
-		print(cmd);os.system(cmd)
-		
-		target_dir = '%s/%s' % (os.getenv('NICER_PUBLIC_DATA_PATH'),yyyy_mm)
-		if not os.path.exists(target_dir):
-			cmd = 'mkdir -p %s' % target_dir
+		try:
+			cmd = 'tar zxvf %s;' % tarfile 
 			print(cmd);os.system(cmd)
 
-		cmd = 'mv %s %s' % (obsid,target_dir)
-		print(cmd);os.system(cmd)		
+			cmd = 'rm -f %s' % tarfile
+			print(cmd);os.system(cmd)
+			
+			if not os.path.exists(target_dir):
+				cmd = 'mkdir -p %s' % target_dir
+				print(cmd);os.system(cmd)
+
+			cmd = 'mv %s %s' % (obsid,target_dir)
+			print(cmd);os.system(cmd)		
+		except:
+			print("error of opening the tarfile (download error).")
 
 
 
