@@ -1,7 +1,10 @@
 # nicerlib (user script library for NICER)
 Python library for user analyses pipeline and scripts of the NICER X-ray observatory.
 
+* The current version requires NICERDAS version 2018-03-01_V003 *
+
 ## Description
+
 To use these scripts add *basedir*/nicerlib/scripts to your PATH and add *basedir*/nicerlib to your PYTHONPATH, where *basedir* is wherever you cloned nicerlib. After modifying environment setups of *basedir*/setenv/nicerlib_setenv.bashrc, you may run...
 
 ```
@@ -10,7 +13,7 @@ source basedir/setenv/nicerlib_setenv.bashrc
 
 
 ## Preparation 
-It is recommended to construct nicerlib setups under a'pyenv' environment to avoid potential conflicts among python library versions. Followings are an installation example of 'pyenv'.
+You can skip this step if you have already installed required python library. It is recommended to construct nicerlib setups under a'pyenv' environment to avoid potential conflicts among python library versions. Followings are an installation example of 'pyenv'.
 
 ```
 git clone git://github.com/yyuu/pyenv.git ~/.pyenv
@@ -43,15 +46,21 @@ You can download the code as follows.
 git clone https://github.com/tenoto/nicerlib.git
 ```
 
-
-
+### Required python library
+- [HEASoft](https://heasarc.nasa.gov/lheasoft/)
+- astropy (for time conversion only)
 
 ## How to use
 TBD 
 
+### Directory
 
-## Requirements
-- astropy (for time conversion only)
+- nicerlib : a set of libraries for NICER data analyses. 
+- scripts : command-line scripts. some of them are based on HEASoft.
+- setenv : code for environment setups.
+- test : test scripts and example codes to run the library in command line. 
+
+### Scripts
 
 
 ## Change History 
