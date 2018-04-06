@@ -1,11 +1,11 @@
-# nicerlib (NICER user script library)
+# nicerlib (user script library for NICER)
 Python library for user analyses pipeline and scripts of the NICER X-ray observatory.
 
 ## Description
 To use these scripts add *basedir*/nicerlib/scripts to your PATH and add *basedir*/nicerlib to your PYTHONPATH, where *basedir* is wherever you cloned nicerlib. After modifying environment setups of *basedir*/setenv/nicerlib_setenv.bashrc, you may run...
 
 ```
-source *basedir*/setenv/nicerlib_setenv.bashrc
+source basedir/setenv/nicerlib_setenv.bashrc
 ```
 
 
@@ -48,6 +48,10 @@ git clone https://github.com/tenoto/nicerlib.git
 
 ## How to use
 TBD 
+
+
+## Requirements
+- astropy (for time conversion only)
 
 
 ## Change History 
