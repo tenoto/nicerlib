@@ -1,8 +1,13 @@
-# nicerlib
-Python library for analyses pipeline and scripts of the NICER X-ray observatory.
+# nicerlib (NICER user script library)
+Python library for user analyses pipeline and scripts of the NICER X-ray observatory.
 
 ## Description
-To use these scripts add <basedir>/nicerlib/scripts to your PATH and add <basedir>/nicerlib to your PYTHONPATH, where <basedir> is wherever you cloned nicerlib.
+To use these scripts add <basedir>/nicerlib/scripts to your PATH and add <basedir>/nicerlib to your PYTHONPATH, where <basedir> is wherever you cloned nicerlib. After modifying environment setups of <basedir>/setenv/nicerlib_setenv.bashrc, you may run...
+
+```
+source <basedir>/setenv/nicerlib_setenv.bashrc
+```
+
 
 ## Preparation 
 It is recommended to construct nicerlib setups under a'pyenv' environment to avoid potential conflicts among python library versions. Followings are an installation example of 'pyenv'.
@@ -37,6 +42,9 @@ You can download the code as follows.
 ```
 git clone https://github.com/tenoto/nicerlib.git
 ```
+
+
+
 
 ## How to use
 TBD 
