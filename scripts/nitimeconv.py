@@ -2,16 +2,16 @@
 
 __name__    = 'nitimeconv'
 __author__  = 'Teruaki Enoto'
-__version__ = '1.01'
-__date__    = '2018 April 7'
+__version__ = '1.02'
+__date__    = '2018 April 11'
 
 from optparse import OptionParser
 from astropy.time import Time 
 
 NICER_MJDREFI   = 56658.0
 NICER_MJDREFF   = 0.000777592592592593
-NICER_TIMEZERO  = 0.0
-LEAP_INIT = 2.0
+NICER_TIMEZERO  = -1.0
+#LEAP_INIT = 2.0
 
 NICER_MET_ORIGIN   = Time('2014-01-01T00:00:00.000',format='isot',scale='utc')
 FERMI_MET_ORIGIN   = Time('2001-01-01T00:00:00.000',format='isot',scale='utc')
@@ -63,6 +63,16 @@ DESCRIPTION
 	X-ray missions (Chandra/XMM, RXTE, Fermi, and Suzaku). The MET sometime
 	requires further time corrections, and please double check the xTime. 
 
+	Important note: The default setup (flag_time_correction=False) gives 
+	the same output of xTime. On the other hand, the header keyword "TIMEZERO" 
+	of NICER fits files is set to be -1.0, i.e.,the time standard is that TIMEZERO 
+	is always meant to be added to the TIME column. All proper software applies 
+	TIMEZERO to TIME (and GTIs) columns. So, if you use this script to convert 
+	the TIME or GTI columns in the NICER event fits files, please add 
+	--flag_time_correction flag to add the NICER_TIMEZERO (default -1.0) 
+	to input values. 
+
+
 REFERENCES
 	https://heasarc.gsfc.nasa.gov/docs/xte/abc/time_tutorial.html
 
@@ -93,6 +103,11 @@ parser.add_option("-f","--format",dest="format",default="met",
        action="store",help="Time format, any of (met, jd, mjd, isot, and yday)",type="string")
 parser.add_option("-s","--scale",dest="scale",default="met",
        action="store",help="Time scale, any of (utc, tt, met, met_nicer, met_fermi, met_nustar, met_suzaku, met_xmm, and met_chandra)",type="string")
+parser.add_option("-c", "--flag_time_correction", dest="flag_time_correction", 
+		action="store_true", default=False,
+		help="Flag to run the TIMEZERO correction to the input (default:False)")
+parser.add_option("-z","--timezero_for_correction",dest="timezero_for_correction",default=NICER_TIMEZERO,
+		action="store",help="TIMEZERO value for correction (default:-1.0 s).",type="float")
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
@@ -105,29 +120,41 @@ dump  = "----- Input Time Value and Formats -----\n"
 dump += "intime: %s\n" % str(input_value)
 dump += "format: %s\n" % options.format
 dump += "scale : %s\n" % options.scale 
+dump += "time zero correction: %s\n" % options.flag_time_correction
+if options.flag_time_correction:
+	timezero = options.timezero_for_correction	
+	dump += "TIMEZERO: %.3f (s)\n" % timezero
+else:
+	timezero = 0.0
+dump += "\n"	
 
 if options.format == "met":
 	if options.scale == "met" or options.scale == "met_nicer":
 		mission = float(input_value)
-		mjd_tt  = NICER_MJDREFI+NICER_MJDREFF+(NICER_TIMEZERO+mission)/86400.0
+		mission += timezero 
+		mjd_tt  = NICER_MJDREFI+NICER_MJDREFF+(mission)/86400.0
 		time_tt = Time(mjd_tt,format='mjd',scale='tt')
 		time_utc = time_tt.utc
 	elif options.scale == "met_fermi":
 		time_utc = Time(float(input_value)+FERMI_MET_ORIGIN.gps,format='gps',scale='utc')
 		time_tt  = time_utc.tt
 		mission  = time_tt.gps + NICER_MET_ORIGIN.gps
+		mission -= timezero 
 	elif options.scale ==  "met_nustar":
 		time_utc = Time(float(input_value)+NUSTAR_MET_ORIGIN.gps,format='gps',scale='utc')
 		time_tt  = time_utc.tt
 		mission  = time_tt.gps + NICER_MET_ORIGIN.gps	
+		mission -= timezero 		
 	elif options.scale == "met_suzaku":
 		time_utc = Time(float(input_value)+SUZAKU_MET_ORIGIN.gps,format='gps',scale='utc')
 		time_tt  = time_utc.tt
 		mission  = time_tt.gps + NICER_MET_ORIGIN.gps		
+		mission -= timezero 		
 	elif options.scale == "met_xmm" or options.scale == "met_chandra":
 		time_utc = Time(float(input_value)+XMM_MET_ORIGIN.gps,format='gps',scale='utc')
 		time_tt  = time_utc.tt
 		mission  = time_tt.gps + NICER_MET_ORIGIN.gps	
+		mission -= timezero 		
 else:
 	if input_value.isdigit():
 		time = Time(float(input_value),format=options.format,scale=options.scale)
@@ -136,7 +163,8 @@ else:
 	time_tt = time.tt 
 	time_tt.format = 'mjd'
 	mjd_tt = time_tt 
-	mission = (float(mjd_tt.mjd) - NICER_MJDREFI - NICER_MJDREFF) * 86400.0 - NICER_TIMEZERO
+	mission = (float(mjd_tt.mjd) - NICER_MJDREFI - NICER_MJDREFF) * 86400.0 
+	mission -= timezero
 	time_utc = time.utc 
 	time_utc.format = 'mjd'
 
@@ -152,9 +180,13 @@ dump += "----- Calendar Time Formats -----\n"
 dump += "ISO8601_TT : %s (TT)\n" % time_tt.isot 
 dump += " JD_TT     : %.8f (TT) \n" % time_tt.jd
 dump += "MJD_TT     :   %.8f (TT)\n" % time_tt.mjd
+dump += "DOY_TT     :   %s (TT)\n" % time_tt.yday
+dump += "\n"
 dump += "ISO8601_UTC: %s (UTC)\n" % time_utc.isot 
 dump += " JD_UTC    : %.8f (UTC) \n" % time_utc.jd
 dump += "MJD_UTC    :   %.8f (UTC) \n" % time_utc.mjd
+dump += "DOY_UTC   :   %s (UTC)\n" % time_utc.yday
+dump += "\n"
 dump += "----- Mission-Specific Time Formats (Misson Elapsed Time, NET) -----\n"
 dump += "Fermi seconds sicne 2001.0 UTC (decimal)     : %.6f\n" % fermi_time
 dump += "NuSTAR seconds since 2010.0 UTC (decimal)    : %.6f\n" % nustar_time
@@ -163,7 +195,9 @@ dump += "Suzaku seconds since 2000.0 UTC (decimal)    : %.6f\n" % suzaku_time
 #dump += "Swift seconds since 2001.0 UTC (decimal): %.8f\n" % swift_time
 dump += "XMM seconds since 1998.0 TT (decimal)        : %.6f\n" % xmm_time
 dump += "Chandra seconds since 1998.0 TT (decimal)    : %.6f\n" % chandra_time
-dump += "NICER seconds since 2014.0 UTC (decimal)     : %.6f" % mission 
+dump += "NICER seconds since 2014.0 UTC (decimal)     : %.6f\n" % mission 
+if options.flag_time_correction:
+	dump += "Caution : TIMEZERO correction is included.\n"
 print(dump)
 
 
