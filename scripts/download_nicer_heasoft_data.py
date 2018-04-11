@@ -19,8 +19,8 @@ import subprocess
 parser = OptionParser()
 parser.add_option("-c","--inputcsv",dest="inputcsv",
         action="store",help="Input NICER segment table (CSV format)",type="string")
-parser.add_option("-k","--flag_kyoto",action="store_true",dest="flag_kyoto", default=True)
-parser.add_option("-m","--flag_move",action="store_true",dest="flag_move", default=True)
+parser.add_option("-k","--flag_kyoto",action="store_false",dest="flag_kyoto")
+parser.add_option("-m","--flag_move",action="store_true",dest="flag_move")
 parser.add_option("-s","--skip_yyyymm_list",dest="skip_yyyymm_list",default=None,
         action="store",help="skip list of [yyyymm], e.g., \"[2018_02,2018_03]\"",type="string")
 (options, args) = parser.parse_args()
@@ -49,7 +49,8 @@ else:
 	print("Target Name mode: {}".format(target_name))	
 #print(source)
 
-skip_yyyymm_list = list(options.skip_yyyymm_list.replace('[','').replace(']','').split(','))
+if options.skip_yyyymm_list is not None:
+	skip_yyyymm_list = list(options.skip_yyyymm_list.replace('[','').replace(']','').split(','))
 
 for n,[no, row] in enumerate(source.iterrows()):
 	# Extract the relevant columns
@@ -61,9 +62,10 @@ for n,[no, row] in enumerate(source.iterrows()):
 	srcname = row['Target Name']
 	tarfile = '%s.tar' % obsid
 
-	if yyyy_mm in skip_yyyymm_list:
-		print("... skip yyyy_mm.")
-		continue
+	if options.skip_yyyymm_list is not None:
+		if yyyy_mm in skip_yyyymm_list:
+			print("... skip yyyy_mm.")
+			continue
 
 	download_path = '%s/%s/%s ' % (FTPPATH_NICER_DATA, yyyy_mm, tarfile)
 	dump = '%s %s  %s  %.1f (s) %s\n' % (srcname,obsid,dtime,gexpo, download_path)
