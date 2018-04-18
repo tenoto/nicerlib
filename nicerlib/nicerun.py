@@ -61,6 +61,13 @@ class NicerObservation():
 			sys.stderr.write('Error: file does not exist.\n==>%s' % self.orbfile)		
 			exit()
 
+		self.catfile = '%s/auxil/ni%s.cat.gz' % (self.obsid_path, self.obsid)	
+		if not os.path.exists(self.catfile):
+			self.orbfile = '%s/auxil/ni%s.cat' % (self.obsid_path, self.obsid)	
+		elif not os.path.exists(self.catfile):
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.catfile)		
+			exit()			
+
 		self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
 		if not os.path.exists(self.clevt_mpu7):
 			self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt' % (self.obsid_path, self.obsid)
@@ -148,6 +155,8 @@ class NicerObservation():
 
 			cmd  = 'gzip %s\n' % (self.clevt_mpu7.replace('.gz',''))
 			cmd += 'gzip %s\n' % (self.ufaevt_mpu7.replace('.gz',''))
+			cmd += 'gzip %s\n' % (self.mkffile.replace('.gz',''))			
+			cmd += 'gzip %s\n' % (self.catfile.replace('.gz',''))						
 			print(cmd);os.system(cmd)
 
 			self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
@@ -156,7 +165,7 @@ class NicerObservation():
 	def run_niprefilter2(self):
 		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
 
-		niprefilter2_outfile = '%s.mkf2' % os.path.splitext(self.mkffile.replace('.gz',''))[0]
+		niprefilter2_outfile = '%s_lv2.mkf' % os.path.splitext(self.mkffile.replace('.gz',''))[0]
 		cmd  = 'rm -f %s.gz %s\n' % (niprefilter2_outfile,niprefilter2_outfile)
 		print(cmd);os.system(cmd)
 
@@ -764,23 +773,23 @@ class NicerProcess():
 		self.set_nicer_observations()
 		self.set_response_files()
 		# Main process 
-		self.run_nicerl2()
-		self.run_niprefilter2()
-		self.merge_mkffiles()
-		self.merge_orbfiles()
-		self.merge_ufafiles()
-		self.extract_overonly_event()         # Teru's method 		
-		self.extract_overonly_curve()         # Teru's method 		
-		self.interporation_overonly2mkf()     # Teru's method 		
-		self.prepare_gtifiles()               # Teru's method 		
-		self.show_gtifiles_exposure()         # Teru's method 		
-		self.extract_cleaned_events_spectra() # Teru's method 		
-		self.plot_spectrum()                  
-		self.plot_curve()                    
+		#self.run_nicerl2()
+		#self.run_niprefilter2()
+		#self.merge_mkffiles()
+		#self.merge_orbfiles()
+		#self.merge_ufafiles()
+		#self.extract_overonly_event()         # Teru's method 		
+		#self.extract_overonly_curve()         # Teru's method 		
+		#self.interporation_overonly2mkf()     # Teru's method 		
+		#self.prepare_gtifiles()               # Teru's method 		
+		#self.show_gtifiles_exposure()         # Teru's method 		
+		#self.extract_cleaned_events_spectra() # Teru's method 		
+		#self.plot_spectrum()                  
+		#self.plot_curve()                    
 		# 
 		# Timing 
-		self.run_barycentric_correction() # for individual ObsID
-		self.extract_lowbackground_data() # for merged data 
+		#self.run_barycentric_correction() # for individual ObsID
+		#self.extract_lowbackground_data() # for merged data 
 		# End 
 		self.save_setup()
 
