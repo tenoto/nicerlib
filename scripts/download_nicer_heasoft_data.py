@@ -19,8 +19,8 @@ import subprocess
 parser = OptionParser()
 parser.add_option("-c","--inputcsv",dest="inputcsv",
         action="store",help="Input NICER segment table (CSV format)",type="string")
-parser.add_option("-k","--flag_kyoto",action="store_false",dest="flag_kyoto")
-parser.add_option("-m","--flag_move",action="store_true",dest="flag_move")
+parser.add_option("-k","--flag_kyoto",action="store_true",dest="flag_kyoto",default=False)
+parser.add_option("-m","--flag_move",action="store_true",dest="flag_move",default=True)
 parser.add_option("-s","--skip_yyyymm_list",dest="skip_yyyymm_list",default=None,
         action="store",help="skip list of [yyyymm], e.g., \"[2018_02,2018_03]\"",type="string")
 (options, args) = parser.parse_args()
