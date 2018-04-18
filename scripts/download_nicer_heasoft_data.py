@@ -8,6 +8,7 @@ __version__ = '1.00'
 __date__    = '2018 April 5'
 
 FTPPATH_NICER_DATA = 'ftp://heasarc.gsfc.nasa.gov/nicer/data/obs'
+DELAY_DAYS_FOR_PUBLIC = 20 
 
 import os 
 import sys 
@@ -56,7 +57,11 @@ for n,[no, row] in enumerate(source.iterrows()):
 	# Extract the relevant columns
 	#obsid = "{:010d}".format(row['Observation ID'])
 	obsid = str(row['Observation ID'])
-	dtime = datetime.datetime.strptime(row['Start TimeUTC'], "%Y-%m-%dT%H:%M:%S")
+	try:
+		dtime = datetime.datetime.strptime(row['Start TimeUTC'], "%Y-%m-%dT%H:%M:%S")
+	except:
+		print("... skip (ObsID=%s) because Start TimeUTC is blank." % obsid)
+		continue 
 	gexpo = row['Good Expo[s]']
 	yyyy_mm = "{}_{:02d}".format(dtime.year, dtime.month)
 	srcname = row['Target Name']
@@ -66,6 +71,16 @@ for n,[no, row] in enumerate(source.iterrows()):
 		if yyyy_mm in skip_yyyymm_list:
 			print("... skip yyyy_mm.")
 			continue
+
+	obsid_type = obsid[0]
+	if obsid_type == '0':
+		print("... skip ObsID starting 0 (ObsID=%s)." % obsid)
+		continue 
+
+	t_now = datetime.datetime.now()
+	if (t_now - dtime).days < DELAY_DAYS_FOR_PUBLIC:
+		print("... skip (ObsID=%s) since the observation is within %d days" % (obsid,DELAY_DAYS_FOR_PUBLIC))
+		continue 
 
 	download_path = '%s/%s/%s ' % (FTPPATH_NICER_DATA, yyyy_mm, tarfile)
 	dump = '%s %s  %s  %.1f (s) %s\n' % (srcname,obsid,dtime,gexpo, download_path)
