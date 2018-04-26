@@ -65,7 +65,7 @@ class NicerMKF():
 			["FPM_NOISE25_COUNT",200,0.0,200.0,True],		
 			["FPM_RATIO_REJ_COUNT",200,0.0,200.0,True],		
 			["FPM_XRAY_PI_0000_0025",200,0.0,200.0,True],		
-			["FPM_XRAY_PI_0025_0200",200,0.0,200.0,True],		
+			["FPM_XRAY_PI_0035_0200",200,0.0,200.0,True],		
 			["FPM_XRAY_PI_0200_0800",200,0.0,200.0,True],		
 			["FPM_XRAY_PI_0800_1200",200,0.0,200.0,True],		
 			["FPM_XRAY_PI_1200_1500",200,0.0,200.0,True],		
@@ -193,7 +193,7 @@ class NicerMKF():
 			'NICER_SAA_STR':self.hdu['PREFILTER'].data['NICER_SAA'].astype('string'),			
 			'FPM_RATIO_REJ_COUNT':self.hdu['PREFILTER'].data['FPM_RATIO_REJ_COUNT'].astype('float'),	
 			'FPM_XRAY_PI_0000_0025':self.hdu['PREFILTER'].data['FPM_XRAY_PI_0000_0025'].astype('float'),
-			'FPM_XRAY_PI_0025_0200':self.hdu['PREFILTER'].data['FPM_XRAY_PI_0025_0200'].astype('float'),
+			'FPM_XRAY_PI_0035_0200':self.hdu['PREFILTER'].data['FPM_XRAY_PI_0035_0200'].astype('float'),
 			'FPM_XRAY_PI_0200_0800':self.hdu['PREFILTER'].data['FPM_XRAY_PI_0200_0800'].astype('float'),
 			'FPM_XRAY_PI_0800_1200':self.hdu['PREFILTER'].data['FPM_XRAY_PI_0800_1200'].astype('float'),
 			'FPM_XRAY_PI_1200_1500':self.hdu['PREFILTER'].data['FPM_XRAY_PI_1200_1500'].astype('float'),
@@ -285,17 +285,83 @@ class NicerMKF():
 		pngname = '%s/%s_optical_scat.png' % (self.outdir,self.basename)
 		sns_plot_optical.savefig(pngname)
 
+	def plot_cumulative(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		fpm_xray_pi = 'FPM_XRAY_PI_0200_0800'
+		df = self.dframe.dropna(subset=['NICER_SAA','FPM_OVERONLY_COUNT',fpm_xray_pi])
+		flag_nonzero = np.logical_and(df[fpm_xray_pi]>0.0,df['FPM_OVERONLY_COUNT']>0.0)
+		flag_nonsaa  = np.logical_and(flag_nonzero,(df['NICER_SAA']==0))
+		#flag_nonsaa  = np.logical_and(flag_nonzero,(df['COR_SAX']>4))
+
+		fig = plt.figure()
+		sns_plot = sns.distplot(np.log10(df[flag_nonsaa][fpm_xray_pi]),
+			kde=False,norm_hist=True,bins=30,
+			hist_kws={"range":[-2.0,3.0],"cumulative":False})
+		sns_plot.set_yscale('log')
+		sns_plot.set_xlabel(fpm_xray_pi)
+		sns_plot.set_ylabel("Fraction")
+		pdfname = '%s/%s_hist_%s.pdf' % (self.outdir,self.basename,fpm_xray_pi)
+		fig.savefig(pdfname)
+
+		fig = plt.figure()
+		sns_plot = sns.distplot(np.log10(df[flag_nonsaa][fpm_xray_pi]),
+			kde=False,norm_hist=True,bins=100,
+			hist_kws={"range":[-2.0,3.0],"cumulative":True})
+		#sns_plot.set_yscale('log')
+		sns_plot.set_xlabel(fpm_xray_pi)
+		sns_plot.set_ylabel("Cummulative fraction")
+		pdfname = '%s/%s_cummulative_%s.pdf' % (self.outdir,self.basename,fpm_xray_pi)
+		fig.savefig(pdfname)
+
+
+		fig = plt.figure()
+		sns_plot = sns.distplot(np.log10(df[flag_nonsaa]['FPM_OVERONLY_COUNT']),
+			kde=False,norm_hist=True,bins=30,
+			hist_kws={"range":[-2.0,3.0],"cumulative":False})
+		sns_plot.set_yscale('log')
+		sns_plot.set_xlabel("FPM_OVERONLY_COUNT")
+		sns_plot.set_ylabel("Fraction")
+		pdfname = '%s/%s_hist_FPM_OVERONLY_COUNT.pdf' % (self.outdir,self.basename)
+		fig.savefig(pdfname)
+
+		fig = plt.figure()
+		sns_plot = sns.distplot(np.log10(df[flag_nonsaa]['FPM_OVERONLY_COUNT']),
+			kde=False,norm_hist=True,bins=100,
+			hist_kws={"range":[-2.0,3.0],"cumulative":True})
+		#sns_plot.set_yscale('log')
+		sns_plot.set_xlabel("FPM_OVERONLY_COUNT")
+		sns_plot.set_ylabel("Cummulative fraction")
+		pdfname = '%s/%s_cummulative_FPM_OVERONLY_COUNT.pdf' % (self.outdir,self.basename)
+		fig.savefig(pdfname)
+
+
+		xcol = np.log10(df[flag_nonsaa]['FPM_OVERONLY_COUNT'])
+		ycol = np.log10(df[flag_nonsaa][fpm_xray_pi])
+		pdfname = "overonly_%s.pdf" % fpm_xray_pi
+		self.plot_jointplot(xcol,ycol,outpdfname=pdfname,title="")
+
+	#def test2(self):
+	#	sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+	#	flag_posval = np.logical_and(self.dframe['FPM_OVERONLY_COUNT']>0.0,self.dframe['FPM_XRAY_PI_0200_0800']>0.0)
+	#	xcol = np.log10(self.dframe['FPM_OVERONLY_COUNT'][flag_posval])
+	#	ycol = np.log10(self.dframe['FPM_XRAY_PI_0200_0800'][flag_posval])
+	#	self.plot_jointplot(xcol,ycol,outpdfname="over_xray.pdf",title="")
+
 	def run(self):
 		self.mkdir()
 		self.set_panda_dataframe()
 		#self.fplot_background_histogram()
 		#self.fplot_background_scatter()
-		self.plot_detid_map()
-		self.plot_parameter_correlation_optical_loading()
-		self.plot_parameter_correlation_particle_background()
-		self.plot_correlations()
-		self.merge_pdffiles()
+		#self.plot_detid_map()
+		#self.plot_parameter_correlation_optical_loading()
+		#self.plot_parameter_correlation_particle_background()
+		#self.plot_correlations()
+		#self.merge_pdffiles()
 		#self.test()
+		self.plot_cumulative()
+		#self.test2()
 
 """
 	  Column Name                Format     Dims       Units     TLMIN  TLMAX
@@ -365,7 +431,7 @@ class NicerMKF():
 	 64 NUM_FPM_ON                 1J
 	 65 FPM_RATIO_REJ_COUNT        1E
 	 66 FPM_XRAY_PI_0000_0025      1E
-	 67 FPM_XRAY_PI_0025_0200      1E
+	 67 FPM_XRAY_PI_0035_0200      1E
 	 68 FPM_XRAY_PI_0200_0800      1E
 	 69 FPM_XRAY_PI_0800_1200      1E
 	 70 FPM_XRAY_PI_1200_1500      1E
