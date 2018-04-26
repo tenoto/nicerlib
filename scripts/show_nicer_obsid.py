@@ -30,14 +30,18 @@ if len(args) != 1:
 target_name = args[0]
 
 selected = df[df['Target Name']==target_name]
+pd.set_option("display.line_width", 1000)
+#pd.set_option("display.max_rows", 1000)
+#pd.set_option("display.max_colwidth",10000)
 target_id = selected.head(1)['Target ID']
 print("==============================================================")
 print("Target Name %s (Target ID %d)" % (target_name, target_id))
 print("--------------------------------------------------------------")	
 if options.verbose:
-	print(selected.loc[:,['Start TimeUTC','Observation ID','Stop TimeUTC','On-Targ Expo[s]','Good Expo[s]','Process State','Process Date']])
+	print(selected.loc[:,['Start TimeUTC','Stop TimeUTC','Observation ID','Stop TimeUTC','On-Targ Expo[s]','Good Expo[s]','Process State','Process Date']])
 else:
-	print(selected.loc[:,['Start TimeUTC','Observation ID','On-Targ Expo[s]','Good Expo[s]']])
+	#print(selected.loc[:,['Start TimeUTC','Stop TimeUTC','Observation ID','On-Targ Expo[s]','Good Expo[s]']])
+	print(selected.loc[:,['Start TimeUTC','Stop TimeUTC','Observation ID','On-Targ Expo[s]']])
 print("--------------------------------------------------------------")	
 print("Target Name %s (Target ID %d)" % (target_name, target_id))
 print("==============================================================")
