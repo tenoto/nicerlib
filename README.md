@@ -69,3 +69,16 @@ TBD
 
 ## Reference:
 - (in Japanese) https://qiita.com/Kensuke-Mitsuzawa/items/7717f823df5a30c27077 
+
+## Quick view of the user standard process of NICER data 
+- nicercal (calibration)
+- nimaketime (time screening)
+- nicermergeclean (merge and clean event data)
+- or... nicerl2 (calibration + screening) = nicercal + nimaketime + nicermergeclean 
+- xselect (for extracting spectra an light curves)
+- barycorr (barycentric correction)
+
+
+
+
+
