@@ -1,7 +1,7 @@
 # nicerlib (user script library for NICER)
 Python library for user analyses pipeline and scripts of the NICER X-ray observatory.
 
-The current version requires NICERDAS version 2018-03-01_V003. 
+The current version requires NICERDAS version 2018-03-01_V003 included HEASoft version 6.24.
 
 ## Description
 
