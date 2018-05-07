@@ -31,6 +31,19 @@ which python
 pyenv which python2.7
 ```
 
+### (optional) pyenv virtualenv 
+```
+git clone https://github.com/yyuu/pyenv-virtualenv.git ~/.pyenv/plugins/pyenv-virtualenv
+```
+
+add the following line in the .zshrc (or equivalent).
+```
+eval "$(pyenv virtualenv-init -)"
+```
+
+### Required software and python library 
+- [HEASoft](https://heasarc.nasa.gov/lheasoft/)
+- astropy (for time conversion only)
 Required python modules can be installed for example...
 
 ```
@@ -46,9 +59,7 @@ You can download the code as follows.
 git clone https://github.com/tenoto/nicerlib.git
 ```
 
-### Required python library
-- [HEASoft](https://heasarc.nasa.gov/lheasoft/)
-- astropy (for time conversion only)
+
 
 ## How to use
 TBD 
