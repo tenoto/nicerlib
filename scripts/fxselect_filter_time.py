@@ -3,7 +3,7 @@
 __name__    = 'fxselect_filter_time'
 __author__  = 'Teruaki Enoto'
 __version__ = '1.00'
-__date__    = '2018 March 28'
+__date__    = '2018 May 8'
 
 import os
 import sys
