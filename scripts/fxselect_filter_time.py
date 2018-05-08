@@ -7,7 +7,8 @@ __date__    = '2018 March 28'
 
 import os
 import sys
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits
 from optparse import OptionParser
 from datetime import datetime 
 
