@@ -3,7 +3,7 @@
 __name__    = 'fxselect_extract_spec'
 __author__  = 'Teruaki Enoto'
 __version__ = '1.00'
-__date__    = '2018 Feb 21'
+__date__    = '2018 May 8'
 
 import os
 import sys
