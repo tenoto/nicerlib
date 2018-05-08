@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
 import sys 
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits
 
 if len(sys.argv) != 2:
-	sys.stderr.write("%> %s" % sys.argv[0])
+	sys.stderr.write("usage: %s infits\n" % sys.argv[0])
 	quit()
 infits = sys.argv[1]
 
