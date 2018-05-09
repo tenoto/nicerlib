@@ -2,13 +2,14 @@ import os
 import sys 
 import yaml
 import glob 
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits
 
 from pyheasoft import * 
 from niconst import * 
 
 NICER_DATA_SUBDIRECTORY_LIST = ['auxil','log','xti'] 
-NICER_OUTPUT_SUBDIRS = ['proc/gti','timing']
+NICER_OUTPUT_SUBDIRS = ['proc','timing']
 NICER_YAML_KEYWORDS = ["title","outbase","overonly_lc_binsize","overonly_rate_thresholds","rmffile","arffile","ra","dec","ephem","pulse_search_overonly_threshold","pulse_search_emin_keV","pulse_search_emax_keV","lc_emin_keV","lc_emax_keV","lc_binsize"]
 
 class NicerObservation():
@@ -41,54 +42,75 @@ class NicerObservation():
 		self.evtuf_dir   = '%s/xti/event_uf' % (self.obsid_path)		
 
 		self.attfile = '%s/auxil/ni%s.att.gz' % (self.obsid_path, self.obsid)
-		if not os.path.exists(self.attfile):
-			self.attfile = '%s/auxil/ni%s.att' % (self.obsid_path, self.obsid)
-		elif not os.path.exists(self.attfile):
+		if os.path.exists(self.attfile):
+			sys.stdout.write('attfile: %s\n' % self.attfile)
+		elif os.path.exists(self.attfile.replace('.gz','')):
+			cmd = 'gzip %s' % self.attfile.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
 			sys.stderr.write('Error: file does not exist.\n==>%s' % self.attfile)
 			exit()
 
 		self.mkffile = '%s/auxil/ni%s.mkf.gz' % (self.obsid_path, self.obsid)
-		if not os.path.exists(self.mkffile):
-			self.mkffile = '%s/auxil/ni%s.mkf' % (self.obsid_path, self.obsid)
-		elif not os.path.exists(self.mkffile):
-			sys.stderr.write('Error: file does not exist.\n==>%s' % self.mkffile)		
-			exit()
+		if os.path.exists(self.mkffile):
+			sys.stdout.write('mkffile: %s\n' % self.mkffile)
+		elif os.path.exists(self.mkffile.replace('.gz','')):
+			cmd = 'gzip %s' % self.mkffile.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.mkffile)
+			exit()				
 
 		self.orbfile = '%s/auxil/ni%s.orb.gz' % (self.obsid_path, self.obsid)	
-		if not os.path.exists(self.orbfile):
-			self.orbfile = '%s/auxil/ni%s.orb' % (self.obsid_path, self.obsid)	
-		elif not os.path.exists(self.orbfile):
-			sys.stderr.write('Error: file does not exist.\n==>%s' % self.orbfile)		
-			exit()
-
-		self.catfile = '%s/auxil/ni%s.cat.gz' % (self.obsid_path, self.obsid)	
-		if not os.path.exists(self.catfile):
-			self.orbfile = '%s/auxil/ni%s.cat' % (self.obsid_path, self.obsid)	
-		elif not os.path.exists(self.catfile):
-			sys.stderr.write('Error: file does not exist.\n==>%s' % self.catfile)		
+		if os.path.exists(self.orbfile):
+			sys.stdout.write('orbfile: %s\n' % self.orbfile)
+		elif os.path.exists(self.orbfile.replace('.gz','')):
+			cmd = 'gzip %s' % self.orbfile.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.orbfile)
 			exit()			
 
+		self.catfile = '%s/auxil/ni%s.cat.gz' % (self.obsid_path, self.obsid)	
+		if os.path.exists(self.catfile):
+			sys.stdout.write('catfile: %s\n' % self.catfile)
+		elif os.path.exists(self.catfile.replace('.gz','')):
+			cmd = 'gzip %s' % self.catfile.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.catfile)
+			exit()		
+
 		self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
-		if not os.path.exists(self.clevt_mpu7):
-			self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt' % (self.obsid_path, self.obsid)
-		elif not os.path.exists(self.clevt_mpu7):
-			sys.stderr.write('Warning: file does not exist.\n==>%s' % self.clevt_mpu7)		
-			self.clevt_mpu7 = None
+		if os.path.exists(self.clevt_mpu7):
+			sys.stdout.write('clevt_mpu7: %s\n' % self.clevt_mpu7)
+		elif os.path.exists(self.clevt_mpu7.replace('.gz','')):
+			cmd = 'gzip %s' % self.clevt_mpu7.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.clevt_mpu7)
+			exit()			
 
 		self.ufaevt_mpu7 = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (self.obsid_path, self.obsid)		
-		if not os.path.exists(self.ufaevt_mpu7):
-			self.ufaevt_mpu7 = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt' % (self.obsid_path, self.obsid)					
-		elif not os.path.exists(self.clevt_mpu7):
-			sys.stderr.write('Error: file does not exist.\n==>%s' % self.ufaevt_mpu7)		
-			self.ufaevt_mpu7 = None
+		if os.path.exists(self.ufaevt_mpu7):
+			sys.stdout.write('ufaevt_mpu7: %s\n' % self.ufaevt_mpu7)
+		elif os.path.exists(self.ufaevt_mpu7.replace('.gz','')):
+			cmd = 'gzip %s' % self.ufaevt_mpu7.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.ufaevt_mpu7)
+			exit()				
 
 		self.ufevt_mpu0 = '%s/xti/event_uf/ni%s_0mpu0_uf.evt.gz' % (self.obsid_path, self.obsid)		
-		if not os.path.exists(self.ufevt_mpu0):
-			self.ufevt_mpu0 = '%s/xti/event_cl/ni%s_0mpu0_uf.evt' % (self.obsid_path, self.obsid)					
-		elif not os.path.exists(self.ufevt_mpu0):
-			sys.stderr.write('Error: file does not exist.\n==>%s' % self.ufevt_mpu0)		
-			exit()
-
+		if os.path.exists(self.ufevt_mpu0):
+			sys.stdout.write('ufevt_mpu0: %s\n' % self.ufevt_mpu0)
+		elif os.path.exists(self.ufevt_mpu0.replace('.gz','')):
+			cmd = 'gzip %s' % self.ufevt_mpu0.replace('.gz','')
+			print(cmd);os.system(cmd)
+		else:
+			sys.stderr.write('Error: file does not exist.\n==>%s' % self.ufevt_mpu0)
+			exit()			
+		
 	def show_input_files(self):
 		sys.stdout.write('---------------------------------\n')
 		sys.stdout.write('obsid_path = %s\n' % self.obsid_path)
@@ -156,95 +178,56 @@ class NicerObservation():
 			cmd  = 'gzip %s\n' % (self.clevt_mpu7.replace('.gz',''))
 			cmd += 'gzip %s\n' % (self.ufaevt_mpu7.replace('.gz',''))
 			cmd += 'gzip %s\n' % (self.mkffile.replace('.gz',''))			
-			cmd += 'gzip %s\n' % (self.catfile.replace('.gz',''))						
+			if os.path.exists(self.catfile.replace('.gz','')):
+				cmd += 'gzip %s\n' % (self.catfile.replace('.gz',''))						
 			print(cmd);os.system(cmd)
 
 			self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
 			self.ufaevt_mpu7 = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (self.obsid_path, self.obsid)		
 
+			cmd = 'rm -f %s/xti/event_cl/ni%s_0mpu[0-6]_ufa.evt' % (self.obsid_path,self.obsid)
+			print(cmd);os.system(cmd)
+
 	def run_niprefilter2(self):
 		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
-
-		niprefilter2_outfile = '%s_lv2.mkf' % os.path.splitext(self.mkffile.replace('.gz',''))[0]
-		cmd  = 'rm -f %s.gz %s\n' % (niprefilter2_outfile,niprefilter2_outfile)
-		print(cmd);os.system(cmd)
 
 		cmd  = 'niprefilter2 '
 		cmd += 'indir=%s ' % self.obsid_path
 		cmd += 'infile=%s ' % self.mkffile
-		cmd += 'outfile=%s  ' % niprefilter2_outfile
+		cmd += 'outfile=%s  ' % self.mkffile.replace('.gz','')
+		cmd += 'clobber=yes '
 		print(cmd);os.system(cmd)
 
-		cmd  = 'gzip %s\n' % niprefilter2_outfile
+		cmd  = 'rm -f %s; gzip %s\n' % (self.mkffile,self.mkffile.replace('.gz',''))
 		print(cmd);os.system(cmd)
 
-		self.mkffile = '%s.gz' % niprefilter2_outfile
+	def make_output_directory(self,outdir,flag_recreate=True):
+		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
 
-	"""
-	def extract_overonly_event(self,flag_clean=True):
-		'Extract OVERHOOT Only count'
+		self.outdir = outdir
+		if flag_recreate:
+			cmd = 'rm -rf %s;mkdir -p %s' % (self.outdir,self.outdir)
+		else:
+			cmd = 'mkdir -p %s' % (self.outdir,self.outdir)			
+		print(cmd);os.system(cmd)
+
+	def nimaketime(self,expr,outgti,options=""):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		expr = '(EVENT_FLAGS==bxxx010)'
-		fname_inputfiles = '%s/ni%s_0mpu7_overonly.lst' % (self.evtcl_dir,self.obsid)
-		f = open(fname_inputfiles,'w')
-		for mpunum in range(NUM_OF_MPU):
-			uffile = '%s/ni%s_0mpu%d_uf.evt.gz[%s]' % (self.evtuf_dir,self.obsid,mpunum,expr)
-			f.write('%s\n' % uffile)
-		f.close()
+		cmd  = 'nimaketime '		
+		cmd += 'infile=%s ' % self.mkffile
+		cmd += 'outfile=%s ' % outgti
+		cmd += 'expr="%s" ' % expr 
+		cmd += options 
+		print(cmd); os.system(cmd)
 
-		outevt = '%s/tmp_ni%s_0mpu7_overonly.evt' % (self.evtcl_dir,self.obsid)
-		cmd = 'ftmerge @%s %s clobber=yes\n' % (fname_inputfiles,outevt)
-		print(cmd);os.system(cmd)
-
-		self.overonly_evt = '%s/ni%s_0mpu7_overonly.evt' % (self.evtcl_dir,self.obsid)
-		cmd = 'niextract-events %s %s timefile=%s[GTI] clobber=yes\n' % (outevt,self.overonly_evt,self.clevt_mpu7)
-		print(cmd);os.system(cmd)		
-
-		if flag_clean:
-			cmd = 'rm -f %s' % outevt
-			print(cmd);os.system(cmd)
-
-		cmd = 'ftcalc %s %s PI 0 clobber=yes' % (self.overonly_evt,self.overonly_evt)
-		print(cmd);os.system(cmd)		
-
-		for i in range(3):
-			cmd  = 'fparkey %d %s+%d TLMIN10 add=yes\n' % (NICER_PI_MIN,self.overonly_evt,i)
-			cmd += 'fparkey %d %s+%d TLMAX10 add=yes\n' % (NICER_PI_MAX,self.overonly_evt,i)			
-			print(cmd);os.system(cmd)		
-
-	def extract_energy_selected_xrayevent(self,emin,emax,flag_clean=True):
-		'Extract energy-selected X-ray events'
+	def nicerclean(self,ingti,outevt):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		expr = '(EVENT_FLAGS==bx1x000)'
-		fname_inputfiles = '%s/ni%s_0mpu7_eselxray.lst' % (self.evtcl_dir,self.obsid)
-		f = open(fname_inputfiles,'w')
-		for mpunum in range(NUM_OF_MPU):
-			uffile = '%s/ni%s_0mpu%d_uf.evt.gz[%s]' % (self.evtuf_dir,self.obsid,mpunum,expr)
-			f.write('%s\n' % uffile)
-		f.close()
-
-		outevt = '%s/tmp_ni%s_0mpu7_eselxray.evt' % (self.evtcl_dir,self.obsid)
-		cmd = 'ftmerge @%s %s clobber=yes\n' % (fname_inputfiles,outevt)
-		print(cmd);os.system(cmd)
-
-		self.eselxray_evt = '%s/ni%s_0mpu7_eselxray.evt' % (self.evtcl_dir,self.obsid)
-		cmd = 'niextract-events %s %s timefile=%s[GTI] clobber=yes\n' % (outevt,self.eselxray_evt,self.clevt_mpu7)
-		print(cmd);os.system(cmd)		
-
-		if flag_clean:
-			cmd = 'rm -f %s' % outevt
-			print(cmd);os.system(cmd)
-
-		cmd = 'ftcalc %s %s PI 0 clobber=yes' % (self.overonly_evt,self.overonly_evt)
-		print(cmd);os.system(cmd)		
-
-		for i in range(3):
-			cmd  = 'fparkey %d %s+%d TLMIN10 add=yes\n' % (NICER_PI_MIN,self.overonly_evt,i)
-			cmd += 'fparkey %d %s+%d TLMAX10 add=yes\n' % (NICER_PI_MAX,self.overonly_evt,i)			
-			print(cmd);os.system(cmd)	
-	"""
+		cmd  = 'nicerclean infile=%s outfile=%s ' % (self.ufaevt_mpu7,outevt)
+		if ingti != None:
+			cmd += 'gtifile=%s ' % ingti
+		print(cmd); os.system(cmd)
 
 	def run_barycentric_correction(self,ra,dec,ephem=""):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -338,12 +321,14 @@ class NicerProcess():
 		self.check_yaml_keywords()
 
 	def check_yaml_keywords(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)	
 		for key in NICER_YAML_KEYWORDS:
 			if not self.param.has_key(key):
 				sys.stdout.write('yaml file does not have a keyword %s.\n' % key)
 				quit()
 
 	def set_nicer_observations(self):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)		
 		self.niobs_list = []
 		for obsid_path in self.obsid_path_list:
 			self.niobs_list.append(NicerObservation(obsid_path))
@@ -366,23 +351,6 @@ class NicerProcess():
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 		for niobs in self.niobs_list:
 			niobs.run_niprefilter2()
-
-	"""
-	def extract_overonly_event(self):
-		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
-		for niobs in self.niobs_list:
-			niobs.extract_overonly_event()
-	"""
-
-	"""
-	def set_title(self):
-		if len(self.niobs_list) == 1:
-			self.otitle = '%s (%s) process.v=%s' % (self.param['title'],self.niobs_list[0].obsid,__version__)
-		else:
-			self.otitle = '%s (%s...%s) [%d obsids] process.v=%s' % (self.param['title'],
-				self.niobs_list[0].obsid,self.niobs_list[-1].obsid,len(self.niobs_list),__version__)
-		self.ftitle_time = '%s - %s (%s - %s)' % (self.date_obs,self.date_end,self.tstart,self.tstop)
-	"""
 
 	def merge_mkffiles(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -412,49 +380,20 @@ class NicerProcess():
 		cmd = 'ftmerge infile=@%s outfile=%s' % (self.orblist,self.merged_orbfile)
 		print(cmd); os.system(cmd)		
 
-	"""
-	def extract_overonly_curve(self):
+	def merge_ufafiles(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		self.overonlylist = '%s/proc/%s_mgd_overonly.lst' % (self.outdir,self.param['outbase'])
-		f = open(self.overonlylist,'w')		
+		#self.ufalist = '%s/proc/%s_ufalist.lis' % (self.outdir,self.param['outbase'])
+		self.merged_ufalst = '%s/proc/%s_mgd_ufa.lst' % (self.outdir,self.param['outbase'])
+		f = open(self.merged_ufalst,'w')
 		for niobs in self.niobs_list:
-			sys.stdout.write('%s\n' % niobs.overonly_evt)
-			f.write('%s\n' % niobs.overonly_evt)
-		f.close()
+			sys.stdout.write('%s\n' % niobs.ufaevt_mpu7)
+			f.write('%s\n' % niobs.ufaevt_mpu7)
+		f.close()		
 
-		self.overonly_curve = '%s/proc/%s_mgd_overonly.flc' % (self.outdir,self.param['outbase'])
-		xselect_extract_curve(self.overonlylist,self.overonly_curve,
-			self.param['overonly_lc_binsize'],pi_min=None,pi_max=None)
-
-		self.overonly_curve_timeoffset = '%s/proc/%s_mgd_overonly_tim.flc' % (self.outdir,self.param['outbase'])
-		cmd  = 'ftcalc infile=%s outfile=%s column=TIME expression="TIME+#TIMEZERO"\n' % (self.overonly_curve, self.overonly_curve_timeoffset)
-		cmd += 'ftcalc infile=%s outfile=%s column=OVERONLY_RATE expression="RATE" clobber=yes\n' % (self.overonly_curve_timeoffset, self.overonly_curve_timeoffset)		
-		cmd += 'ftcalc infile=%s outfile=%s column=OVERONLY_ERRIR expression="ERROR" clobber=yes\n' % (self.overonly_curve_timeoffset, self.overonly_curve_timeoffset)				
-		cmd += 'ftcalc infile=%s outfile=%s column=OVERONLY_FRACEXP  expression="FRACEXP" clobber=yes\n' % (self.overonly_curve_timeoffset, self.overonly_curve_timeoffset)						
-		cmd += 'fdelcol %s+1 colname="RATE" confirm=no proceed=yes\n'	% self.overonly_curve_timeoffset	
-		cmd += 'fdelcol %s+1 colname="ERROR" confirm=no proceed=yes\n'	% self.overonly_curve_timeoffset	
-		cmd += 'fdelcol %s+1 colname="FRACEXP" confirm=no proceed=yes\n'	% self.overonly_curve_timeoffset					
+		self.merged_ufaevt = '%s/proc/%s_mgd_ufa.evt' % (self.outdir,self.param['outbase'])
+		cmd = 'nimpumerge infiles=@%s outfile=%s mpulist=7' % (self.merged_ufalst,self.merged_ufaevt)
 		print(cmd); os.system(cmd)
-	"""
-
-	"""
-	def interporation_overonly2mkf(self):
-		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
-
-		cmd  = 'finterp %s+1 ' % self.merged_mkffile
-		cmd += '%s+1 ' % self.overonly_curve_timeoffset
-		cmd += '%s ' % self.merged_mkffile
-		cmd += 'OVERONLY_RATE'
-		print(cmd); os.system(cmd)			
-
-		cmd  = 'fparkey %d ' % self.param['overonly_lc_binsize']
-		cmd += '%s ' % self.merged_mkffile
-		cmd += 'OVERBNSZ '
-		cmd += 'comm="over-only light curve bin size (sec)" '
-		cmd += 'add=yes '
-		print(cmd); os.system(cmd)			
-	"""
 
 	def run_nimaketime(self,expr,outgti):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -475,20 +414,6 @@ class NicerProcess():
 		cmd += 'expr="(NICER_SAA==1)" '
 		print(cmd); os.system(cmd)		
 
-	def merge_ufafiles(self):
-		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
-
-		self.ufalist = '%s/proc/%s_ufalist.lis' % (self.outdir,self.param['outbase'])
-		f = open(self.ufalist,'w')
-		for niobs in self.niobs_list:
-			sys.stdout.write('%s\n' % niobs.ufaevt_mpu7)
-			f.write('%s\n' % niobs.ufaevt_mpu7)
-		f.close()		
-
-		self.merged_ufaevt = '%s/proc/%s_mgd_ufa.evt' % (self.outdir,self.param['outbase'])
-		cmd = 'nimpumerge infiles=@%s outfile=%s mpulist=7' % (self.ufalist,self.merged_ufaevt)
-		print(cmd); os.system(cmd)
-
 	def run_nicerclean(self,ingti,outevt):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -496,6 +421,16 @@ class NicerProcess():
 		if ingti != None:
 			cmd += 'gtifile=%s ' % ingti
 		print(cmd); os.system(cmd)
+
+	"""
+	def set_title(self):
+		if len(self.niobs_list) == 1:
+			self.otitle = '%s (%s) process.v=%s' % (self.param['title'],self.niobs_list[0].obsid,__version__)
+		else:
+			self.otitle = '%s (%s...%s) [%d obsids] process.v=%s' % (self.param['title'],
+				self.niobs_list[0].obsid,self.niobs_list[-1].obsid,len(self.niobs_list),__version__)
+		self.ftitle_time = '%s - %s (%s - %s)' % (self.date_obs,self.date_end,self.tstart,self.tstop)
+	"""
 
 	"""
 	def prepare_gtifiles(self):
@@ -571,66 +506,18 @@ class NicerProcess():
 			self.rmffile = None
 			self.arffile = None 
 
-	"""
-	def extract_cleaned_events_spectra(self):
+	def extract_spectrum(self,evtfile):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		dict_keywords = {"MRGSTART":self.date_obs,"MRGSTOP":self.date_end}
+		outpha = evtfile.replace('.evt','.pha')
+		cmd  = 'fxselect_extract_spec.py '
+		cmd += '--inputevtfits=%s ' % evtfile
+		cmd += '--outputpha=%s ' % outpha
+		cmd += '--rmf=%s ' % self.rmffile
+		cmd += '--arf=%s ' % self.arffile
+		print(cmd);os.system(cmd)
 
-		dict_keywords["FILTRCND"] = "standard"
-		self.merged_clevt = self.merged_ufaevt.replace('_ufa.evt','_cl.evt')
-		self.run_nicerclean(None,self.merged_clevt)
-		self.clpha_all = xselect_extract_spectrum(self.merged_clevt,
-			outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)		
-
-		if get_total_gti_exposure(self.fgti_night,flag_dump=False,extension_name='STDGTI') > 0.0:
-			dict_keywords["FILTRCND"] = "night-all"
-			self.clevt_night = self.fgti_night.replace('.gti','.evt')
-			self.run_nicerclean(self.fgti_night,self.clevt_night)
-			self.clpha_night = xselect_extract_spectrum(self.clevt_night,
-				outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)	
-		if get_total_gti_exposure(self.fgti_day,flag_dump=False,extension_name='STDGTI') > 0.0:
-			dict_keywords["FILTRCND"] = "day-all"
-			self.clevt_day = self.fgti_day.replace('.gti','.evt')
-			self.run_nicerclean(self.fgti_day,self.clevt_day)
-			self.clpha_day = xselect_extract_spectrum(self.clevt_day,
-				outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)	
-		if get_total_gti_exposure(self.fgti_nicersaa,flag_dump=False,extension_name='STDGTI') > 0.0:
-			dict_keywords["FILTRCND"] = "nicersaa"
-			self.evt_nicersaa = self.fgti_nicersaa.replace('.gti','.evt')
-			self.run_nicerclean(self.fgti_nicersaa,self.evt_nicersaa)
-			self.pha_nicersaa = xselect_extract_spectrum(self.evt_nicersaa,
-				outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
-
-		for over_rates in self.param['overonly_rate_thresholds']:
-			rate_min = over_rates[0]
-			rate_max = over_rates[1]	
-			index = self.param['overonly_rate_thresholds'].index(over_rates)		
-
-			fgti = '%s/proc/gti/%s_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
-			if get_total_gti_exposure(fgti,flag_dump=False,extension_name='STDGTI') > 0.0:
-				dict_keywords["FILTRCND"] = "%.1e<over<=%.1e(all)" % (rate_min,rate_max)
-				clevt = fgti.replace('.gti','.evt')
-				self.run_nicerclean(fgti,clevt)
-				clpha = xselect_extract_spectrum(clevt,
-					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
-
-			fgti_night = '%s/proc/gti/%s_night_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
-			if get_total_gti_exposure(fgti_night,flag_dump=False,extension_name='STDGTI') > 0.0:
-				dict_keywords["FILTRCND"] = "%.1e<over<=%.1e(night)" % (rate_min,rate_max)
-				clevt_night = fgti_night.replace('.gti','.evt')
-				self.run_nicerclean(fgti_night,clevt_night)
-				clpha_night = xselect_extract_spectrum(clevt_night,
-					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
-
-			fgti_day = '%s/proc/gti/%s_day_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
-			if get_total_gti_exposure(fgti_day,flag_dump=False,extension_name='STDGTI') > 0.0:
-				dict_keywords["FILTRCND"] = "%.1e<over<=%.1e(day)" % (rate_min,rate_max)
-				clevt_day = fgti_day.replace('.gti','.evt')
-				self.run_nicerclean(fgti_day,clevt_day)
-				clpha_day = xselect_extract_spectrum(clevt_day,
-					outdir=None,rmffile=self.rmffile,arffile=self.arffile,dict_keywords=dict_keywords)
-	"""
+		return outpha
 
 	"""
 	def plot_spectrum(self):
@@ -730,7 +617,6 @@ class NicerProcess():
 	def run(self):
 		sys.stdout.write('--run--\n')
 
-		# Initialization 
 		self.show_input_parameters()
 		self.set_obsid_path_list()
 		self.show_obsid_path_list()
@@ -740,57 +626,19 @@ class NicerProcess():
 		self.set_nicer_observations()
 		self.set_response_files()
 		# Main process 
-		self.run_nicerl2()
-		self.run_niprefilter2()
+		if self.param['flag_reprocess']:
+			self.run_nicerl2()
+			self.run_niprefilter2()
 		self.merge_mkffiles()
 		self.merge_orbfiles()
-		self.merge_ufafiles()
-		#self.extract_overonly_event()         # Teru's method 		
-		#self.extract_overonly_curve()         # Teru's method 		
-		#self.interporation_overonly2mkf()     # Teru's method 		
-		#self.prepare_gtifiles()               # Teru's method 		
-		#self.show_gtifiles_exposure()         # Teru's method 		
-		#self.extract_cleaned_events_spectra() # Teru's method 		
-		#self.plot_spectrum()                  
-		#self.plot_curve()                    
-		# 
-		# Timing 
-		self.run_barycentric_correction() # for individual ObsID
-		#self.extract_lowbackground_data() # for merged data 
-		# End 
-		self.save_setup()
+		self.merge_ufafiles()		
+		
+		self.gtifile = '%s/proc/%s_mgd_%s.gti' % (self.outdir,self.outbase,self.param['expr_str'])
+		self.merged_cl2evt = self.gtifile.replace('.gti','.evt').replace('_ufa','_cl2')
+		self.run_nimaketime(expr=self.param['expr'],outgti=self.gtifile)
+		self.run_nicerclean(ingti=self.gtifile,outevt=self.merged_cl2evt)
+		self.merged_cl2pha = self.extract_spectrum(self.merged_cl2evt)
 
-	def run_org180319(self):
-		sys.stdout.write('--run--\n')
-
-		# Initialization 
-		self.show_input_parameters()
-		self.set_obsid_path_list()
-		self.show_obsid_path_list()
-		self.make_output_directory()
-		self.load_parameterfile()
-		self.show_input_parameters()
-		self.set_nicer_observations()
-		self.set_response_files()
-		# Main process 
-		#self.run_nicerl2()
-		#self.run_niprefilter2()
-		#self.merge_mkffiles()
-		#self.merge_orbfiles()
-		#self.merge_ufafiles()
-		#self.extract_overonly_event()         # Teru's method 		
-		#self.extract_overonly_curve()         # Teru's method 		
-		#self.interporation_overonly2mkf()     # Teru's method 		
-		#self.prepare_gtifiles()               # Teru's method 		
-		#self.show_gtifiles_exposure()         # Teru's method 		
-		#self.extract_cleaned_events_spectra() # Teru's method 		
-		#self.plot_spectrum()                  
-		#self.plot_curve()                    
-		# 
-		# Timing 
-		#self.run_barycentric_correction() # for individual ObsID
-		#self.extract_lowbackground_data() # for merged data 
-		# End 
 		self.save_setup()
 
 
