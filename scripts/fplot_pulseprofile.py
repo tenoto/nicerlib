@@ -7,7 +7,8 @@ __date__    = '2018 March 30'
 
 import os
 import sys
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits
 import subprocess
 from optparse import OptionParser
 
@@ -53,12 +54,12 @@ print(cmd);os.system(cmd)
 
 phase_bin = 1.0/float(options.nbin)
 cmd  = 'fhisto %s %s ' % (options.inputevtfits,tmp1)
-cmd += 'PHASE %.3f ' % phase_bin
-cmd += 'lowval=0.0 highval=1.0 outcolx=PHASE outcoly=COUNTS outcolz=ERROR extname=PROFILE'
+cmd += 'PULSE_PHASE %.3f ' % phase_bin
+cmd += 'lowval=0.0 highval=1.0 outcolx=PULSE_PHASE outcoly=COUNTS outcolz=ERROR extname=PROFILE'
 print(cmd);os.system(cmd)
 
 tmp2 = '%s_tmp2.fht' % basename
-cmd  = 'fcalc clobber=yes %s %s PHASE PHASE+1.0' % (tmp1,tmp2)
+cmd  = 'fcalc clobber=yes %s %s PULSE_PHASE PULSE_PHASE+1.0' % (tmp1,tmp2)
 print(cmd);os.system(cmd)
 
 tmp3 = '%s_tmp3.fht' % basename
@@ -93,7 +94,7 @@ subtitle = 'BGD=%.2e (cps) Max=%.2e Min=%.2e Pulsed_Fraction=%.1f%%' % (options.
 	bgdsub_max_rate,bgdsub_min_rate,pulsed_fraction*100.0)
 
 psfile = '%s.ps' % os.path.splitext(options.outputhistfits)[0]
-cmd  = 'fplot %s PHASE "RATE[RATE_ERR]" - /xw @ ' % options.outputhistfits
+cmd  = 'fplot %s PULSE_PHASE "RATE[RATE_ERR]" - /xw @ ' % options.outputhistfits
 cmd += '<<EOF\n'
 cmd += 'line step on\n'
 cmd += 'time off\n'
