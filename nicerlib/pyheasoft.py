@@ -1,6 +1,7 @@
 import os
 import sys 
-import pyfits 
+#import pyfits 
+import astropy.io.fits as pyfits
 
 from niconst import * 
 
