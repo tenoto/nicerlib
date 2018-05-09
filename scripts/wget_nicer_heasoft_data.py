@@ -8,7 +8,7 @@ __version__ = '1.00'
 __date__    = '2018 April 5'
 
 FTPPATH_NICER_DATA = 'https://heasarc.gsfc.nasa.gov/FTP/nicer/data/obs'
-DELAY_DAYS_FOR_PUBLIC = 20 
+DELAY_DAYS_FOR_PUBLIC = 14
 
 import os 
 import sys 
