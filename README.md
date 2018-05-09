@@ -53,13 +53,16 @@ pip install astropy
 pip show astropy
 ```
 
+### (optional) PINT
+PINT[[http://nanograv-pint.readthedocs.io/en/latest/index.html]]
+see the installation [[http://nanograv-pint.readthedocs.io/en/latest/installation.html#prerequisites]]
+
+
 ## Installation
 You can download the code as follows. 
 ```
 git clone https://github.com/tenoto/nicerlib.git
 ```
-
-
 
 ## How to use
 TBD 
