@@ -3,15 +3,18 @@
 __name__    = 'fplot_hist2d_pulseprofile'
 __author__  = 'Teruaki Enoto'
 __version__ = '1.00'
-__date__    = '2018 Apr. 2'
+__date__    = '2018 May 8'
 
 import os
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits
 import numpy as np 
 import matplotlib.pyplot as plt
 from optparse import OptionParser
 
 from matplotlib.colors import LinearSegmentedColormap
+
+COLUMN_NAME_PHASE = "PULSE_PHASE"
 
 def generate_cmap(colors):
 	"""
@@ -83,7 +86,7 @@ xbinsz = float(options.phasemax - options.phasemin)/float(options.nbin_phase)
 ybinsz = (np.log10(options.emax)-np.log10(options.emin))/float(options.nbin_energy)
 cmd  = 'f2dhisto infile=%s outfil=%s ' % (f_tmp1,outfits)
 cmd += 'xbinsz=%.3f ybinsz=%.3f ' % (xbinsz,ybinsz)
-cmd += 'xcol=PHASE ycol=LOGENERGY '
+cmd += 'xcol=%s ycol=LOGENERGY ' % COLUMN_NAME_PHASE
 cmd += 'xrange="%.3f,%.3f" ' % (options.phasemin,options.phasemax)
 cmd += 'yrange="%.3f,%.3f" ' % (np.log10(options.emin),np.log10(options.emax))
 print(cmd);os.system(cmd)
