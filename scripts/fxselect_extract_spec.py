@@ -54,7 +54,7 @@ if options.phasemin != None and options.phasemax != None:
 	exposure = float(hdu['EVENTS'].header['EXPOSURE'])
 	new_exposure = (options.phasemax - options.phasemin)*exposure
 	cmd  = 'rm -f tmp_sel.evt\n'
-	cmd += 'fselect %s tmp_sel.evt expr="(PHASE>=%.5f)&&(PHASE<=%.5f)"' % (options.inputevtfits,options.phasemin,options.phasemax)
+	cmd += 'fselect %s tmp_sel.evt expr="(PULSE_PHASE>=%.5f)&&(PULSE_PHASE<=%.5f)"' % (options.inputevtfits,options.phasemin,options.phasemax)
 	print(cmd);os.system(cmd)
 	cmd = """
 xselect <<EOF
