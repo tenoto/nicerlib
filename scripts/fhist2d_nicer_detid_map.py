@@ -6,7 +6,8 @@ __version__ = '1.00'
 __date__    = '2018 Mar. 29'
 
 import os
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits 
 import numpy as np 
 import matplotlib.pyplot as plt
 from optparse import OptionParser
