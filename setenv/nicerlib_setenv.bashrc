@@ -19,7 +19,7 @@ elif [ $NAME = 'llama' ]; then
 	echo '...setting for machine of "fireant"'
 	export NICER_DATA_PATH=/Users/enoto/work/nicer/data
 	export NICER_PUBLIC_DATA_PATH=/Users/enoto/work/nicer/data/obs
-	export NICER_SOFT_PATH=/Users/enoto/work/nicer/nisoft/nicerlib
+	export NICER_SOFT_PATH=/Users/enoto/work/nicer/soft/nicerlib
 	export NICER_RESP_PATH=/Users/enoto/work/niresp
 	export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
 	export PATH=$NICER_SOFT_PATH/scripts:$PATH
