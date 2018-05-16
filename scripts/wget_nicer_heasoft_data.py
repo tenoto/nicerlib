@@ -83,6 +83,10 @@ for n,[no, row] in enumerate(source.iterrows()):
 
 	target_dir = '%s/%s' % (os.getenv('NICER_PUBLIC_DATA_PATH'),yyyy_mm)
 
+	if os.path.exists('%s/%s' % (target_dir,obsid)):
+		print("... directory %s already exists." % obsid)
+		continue 
+
 	download_path = '%s/%s/%s' % (FTPPATH_NICER_DATA, yyyy_mm, obsid)
 	dump = '%s %s  %s  %.1f (s) %s\n' % (srcname,obsid,dtime,gexpo, download_path)
 	sys.stdout.write(dump)
