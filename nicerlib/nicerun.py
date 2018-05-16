@@ -179,7 +179,7 @@ class NicerObservation():
 			cmd += 'gzip %s\n' % (self.ufaevt_mpu7.replace('.gz',''))
 			cmd += 'gzip %s\n' % (self.mkffile.replace('.gz',''))			
 			if os.path.exists(self.catfile.replace('.gz','')):
-				cmd += 'gzip %s\n' % (self.catfile.replace('.gz',''))						
+				cmd += 'gzip -f %s\n' % (self.catfile.replace('.gz',''))						
 			print(cmd);os.system(cmd)
 
 			self.clevt_mpu7  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt.gz' % (self.obsid_path, self.obsid)
