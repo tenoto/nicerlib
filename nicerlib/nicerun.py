@@ -10,7 +10,7 @@ from niconst import *
 
 NICER_DATA_SUBDIRECTORY_LIST = ['auxil','log','xti'] 
 NICER_OUTPUT_SUBDIRS = ['proc','timing']
-NICER_YAML_KEYWORDS = ["title","outbase","overonly_lc_binsize","overonly_rate_thresholds","rmffile","arffile","ra","dec","ephem","pulse_search_overonly_threshold","pulse_search_emin_keV","pulse_search_emax_keV","lc_emin_keV","lc_emax_keV","lc_binsize"]
+NICER_YAML_KEYWORDS = ["title","outbase","ra","dec","expr_str","expr","rmffile","arffile","flag_nicerl2","flag_niprefilter2"]
 
 class NicerObservation():
 	def __init__(self,obsid_path):
@@ -221,6 +221,9 @@ class NicerObservation():
 		cmd += options 
 		print(cmd); os.system(cmd)
 
+		self.outgti = outgti 
+		return outgti 
+
 	def nicerclean(self,ingti,outevt):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
@@ -229,11 +232,45 @@ class NicerObservation():
 			cmd += 'gtifile=%s ' % ingti
 		print(cmd); os.system(cmd)
 
+		self.outevt = outevt
+		return outevt
+
 	def run_barycentric_correction(self,ra,dec,ephem=""):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
 		self.clevt_bary = barycentric_correction(self.clevt_mpu7,self.orbfile,ra=ra,dec=dec,ephem=ephem)
 
+	def photonphase(self,inevt,outbaryevt,tempo_parfile):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		cmd  = 'cp %s %s' % (inevt,outbaryevt)
+		print(cmd);os.system(cmd)
+
+		#cmd  = 'photonphase --addphase --barytime '
+		cmd  = 'photonphase --addphase '
+		#cmd += '--ephem %s ' % self.param['ephem']
+		cmd += '--orbfile %s ' % self.orbfile
+		cmd += '--plotfile %s ' % outbaryevt.replace('.evt','.png')
+		cmd += '%s %s >& ' % (outbaryevt,tempo_parfile)
+		cmd += '%s ' % outbaryevt.replace('.evt','.log')
+		print(cmd);os.system(cmd)
+
+		"""
+		self.photonphase_evt = '%s/ni%s_%s_baryphase.evt' % (self.outdir,self.obsid,self.param['expr_str'])
+		self.photonphase_log = '%s/ni%s_%s_baryphase.log' % (self.outdir,self.obsid,self.param['expr_str'])
+		self.photonphase_png = '%s/ni%s_%s_baryphase.png' % (self.outdir,self.obsid,self.param['expr_str'])		
+
+		cmd  = 'cp %s %s' % (self.cl2evt_mpu7,self.photonphase_evt)
+		print(cmd);os.system(cmd)
+
+		cmd  = 'photonphase --addphase '
+		cmd += '--ephem %s ' % self.param['ephem']
+		cmd += '--orbfile %s ' % self.orbfile
+		cmd += '--plotfile %s ' % self.photonphase_png
+		cmd += '%s %s >& ' % (self.photonphase_evt,self.param['parfile'])
+		cmd += '%s ' % self.photonphase_log
+		print(cmd);os.system(cmd)
+		"""
 
 class NicerProcess():
 	def __init__(self,args):
@@ -284,6 +321,7 @@ class NicerProcess():
 
 	def make_output_directory(self,flag_recreate=True):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
 		if (not os.path.exists(self.outdir)) or flag_recreate:
 			cmd  = 'rm -rf %s; ' % self.outdir
 			for subdir in NICER_OUTPUT_SUBDIRS:
@@ -422,79 +460,26 @@ class NicerProcess():
 			cmd += 'gtifile=%s ' % ingti
 		print(cmd); os.system(cmd)
 
-	"""
-	def set_title(self):
-		if len(self.niobs_list) == 1:
-			self.otitle = '%s (%s) process.v=%s' % (self.param['title'],self.niobs_list[0].obsid,__version__)
-		else:
-			self.otitle = '%s (%s...%s) [%d obsids] process.v=%s' % (self.param['title'],
-				self.niobs_list[0].obsid,self.niobs_list[-1].obsid,len(self.niobs_list),__version__)
-		self.ftitle_time = '%s - %s (%s - %s)' % (self.date_obs,self.date_end,self.tstart,self.tstop)
-	"""
-
-	"""
-	def prepare_gtifiles(self):
+	def run_each_obsid(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		self.fgti_night = '%s/proc/gti/%s_night.gti' % (self.outdir,self.param['outbase'])
-		self.run_nimaketime("(SUNSHINE==0)",self.fgti_night)
+		subdir = '%s/obsid' % self.outdir
+		cmd  = 'rm -rf %s; mkdir -p %s;' % (subdir,subdir)
+		print(cmd); os.system(cmd)
 
-		self.fgti_day = '%s/proc/gti/%s_day.gti' % (self.outdir,self.param['outbase'])
-		self.run_nimaketime("(SUNSHINE==1)",self.fgti_day)
-
-		self.fgti_nicersaa = '%s/proc/gti/%s_nicersaa.gti' % (self.outdir,self.param['outbase'])
-		self.run_nimaketime_nicersaa(self.fgti_nicersaa)		
-		
-		self.fgti_night_overcut_list = []
-		self.fgti_day_overcut_list   = []		
-		self.fgti_overcut_list   = []				
-		for over_rates in self.param['overonly_rate_thresholds']:
-			rate_min = over_rates[0]
-			rate_max = over_rates[1]	
-
-			index = self.param['overonly_rate_thresholds'].index(over_rates)		
-
-			fgti_night = '%s/proc/gti/%s_night_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
-			self.fgti_night_overcut_list.append(fgti_night)
-			expr = "(SUNSHINE==0)&&(OVERONLY_RATE>%.3f)&&(OVERONLY_RATE<=%.3f)" % (rate_min,rate_max)
-			self.run_nimaketime(expr,fgti_night)
-
-			fgti_day = '%s/proc/gti/%s_day_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
-			self.fgti_day_overcut_list.append(fgti_day)
-			expr = "(SUNSHINE==1)&&(OVERONLY_RATE>%.3f)&&(OVERONLY_RATE<=%.3f)" % (rate_min,rate_max)
-			self.run_nimaketime(expr,fgti_day)	
-
-			fgti = '%s/proc/gti/%s_overcut%d.gti' % (self.outdir,self.param['outbase'],index)
-			self.fgti_overcut_list.append(fgti)
-			expr = "(OVERONLY_RATE>%.3f)&&(OVERONLY_RATE<=%.3f)" % (rate_min,rate_max)
-			self.run_nimaketime(expr,fgti)						
-	"""
-
-	"""	
-	def show_gtifiles_exposure(self):
-		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
-
-		fgti_night_exp = get_total_gti_exposure(self.fgti_night,flag_dump=False,extension_name='STDGTI')
-		fgti_day_exp = get_total_gti_exposure(self.fgti_day,flag_dump=False,extension_name='STDGTI')
-		fgti_nicersaa_exp = get_total_gti_exposure(self.fgti_nicersaa,flag_dump=False,extension_name='STDGTI')		
-		dump  = "----- Exposure ----- \n"
-		dump += "                     : Night (sec)   Day (sec)\n"
-		for over_rates in self.param['overonly_rate_thresholds']:
-			index = self.param['overonly_rate_thresholds'].index(over_rates)		
-			rate_min = over_rates[0]
-			rate_max = over_rates[1]	
-			exp_night = get_total_gti_exposure(self.fgti_night_overcut_list[index],flag_dump=False,extension_name='STDGTI')		
-			exp_day = get_total_gti_exposure(self.fgti_day_overcut_list[index],flag_dump=False,extension_name='STDGTI')					
-			dump += "Band-%d (%.1f-%.1f cps): %.1f      %.1f\n" % (index, rate_min, rate_max, exp_night, exp_day)
-		dump += "Total                : %.1f      %.1f\n" % (fgti_night_exp,fgti_day_exp)
-		dump += "NICER SAA: %.1f (s)\n" % fgti_nicersaa_exp
-
-		print(dump)
-		self.fgti_result = '%s/proc/gti/gti_exposure.txt' % self.outdir
-		f = open(self.fgti_result,'w')
-		f.write(dump)
-		f.close()
-	"""
+		for niobs in self.niobs_list:
+			targetdir = '%s/%s' % (subdir,niobs.obsid)
+			niobs.make_output_directory(targetdir,flag_recreate=True)
+			outgti = '%s/ni%s_%s.gti' % (targetdir,niobs.obsid,self.param['expr_str'])
+			niobs.nimaketime(expr=self.param['expr'],outgti=outgti,options="")
+			outevt = '%s/ni%s_0mpu7_%s.evt' % (targetdir,niobs.obsid,self.param['expr_str'])
+			niobs.nicerclean(ingti=outgti,outevt=outevt)
+			if self.param['flag_photonphase']:
+				outbaryevt = outevt.replace('.evt','_bary.evt')
+				if not os.path.exists(self.param['tempo_parfile']):
+					sys.stderr.write('file %s does not exist.\n' % self.param['tempo_parfile'])
+					quit()
+				niobs.photonphase(outevt,outbaryevt,tempo_parfile=self.param['tempo_parfile'])
 
 	def set_response_files(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -553,37 +538,7 @@ class NicerProcess():
 			f.write('%s\n' % niobs.clevt_bary)
 		f.close()		
 
-	"""
-	def extract_lowbackground_data(self):
-		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		self.fgti_lowbgd = '%s/timing/%s_lowbgd.gti' % (self.outdir,self.param['outbase']) 
-		expr = "OVERONLY_RATE<=%.3f" % self.param['pulse_search_overonly_threshold']
-		self.run_nimaketime(expr,self.fgti_lowbgd)	
-
-		self.flag_lowbgd_data = False 
-		if get_total_gti_exposure(self.fgti_lowbgd,flag_dump=False,extension_name='STDGTI') > 0.0:
-			self.flag_lowbgd_data = True
-			self.clevt_lowbgd = self.fgti_lowbgd.replace('.gti','.evt')
-			self.run_nicerclean(self.fgti_lowbgd,self.clevt_lowbgd)
-			self.clpha_lowbgd = xselect_extract_spectrum(self.clevt_lowbgd,
-				outdir=None,rmffile=self.rmffile,arffile=self.arffile)	
-			self.clevt_lowbgd_bary = barycentric_correction(self.clevt_lowbgd,self.merged_orbfile,
-				ra=self.param['ra'],dec=self.param['dec'],ephem=self.param['ephem'])
-			self.clevt_lowbgd_bary_esel = nicer_fselect_energy(self.clevt_lowbgd_bary,
-				emin_keV=self.param['pulse_search_emin_keV'],emax_keV=self.param['pulse_search_emax_keV'])
-
-			self.clflc_lowbgd = '%s_%sto%skeV_%ds.flc' % (os.path.splitext(self.clevt_lowbgd)[0],
-				str(self.param['lc_emin_keV']).replace('.','p'),
-				str(self.param['lc_emax_keV']).replace('.','p'),
-				self.param['lc_binsize'])
-			xselect_extract_curve(self.clevt_lowbgd,self.clflc_lowbgd,
-				self.param['lc_binsize'],
-				pi_min=KEV_TO_PI*self.param['lc_emin_keV'],
-				pi_max=KEV_TO_PI*self.param['lc_emax_keV'])
-			plot_curve(self.clflc_lowbgd)
-	"""
-	
 	"""
 	def plot_curve(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -626,19 +581,21 @@ class NicerProcess():
 		self.set_nicer_observations()
 		self.set_response_files()
 		# Main process 
-		if self.param['flag_reprocess']:
+		if self.param['flag_nicerl2']:
 			self.run_nicerl2()
+		if self.param['flag_niprefilter2']:
 			self.run_niprefilter2()
-		self.merge_mkffiles()
-		self.merge_orbfiles()
-		self.merge_ufafiles()		
-		
-		self.gtifile = '%s/proc/%s_mgd_%s.gti' % (self.outdir,self.outbase,self.param['expr_str'])
-		self.merged_cl2evt = self.gtifile.replace('.gti','.evt').replace('_ufa','_cl2')
-		self.run_nimaketime(expr=self.param['expr'],outgti=self.gtifile)
-		self.run_nicerclean(ingti=self.gtifile,outevt=self.merged_cl2evt)
-		self.merged_cl2pha = self.extract_spectrum(self.merged_cl2evt)
-
+		if self.param['flag_merge_first']:
+			self.merge_mkffiles()
+			self.merge_orbfiles()
+			self.merge_ufafiles()		
+			self.gtifile = '%s/proc/%s_mgd_%s.gti' % (self.outdir,self.outbase,self.param['expr_str'])
+			self.merged_cl2evt = self.gtifile.replace('.gti','.evt').replace('_ufa','_cl2')
+			self.run_nimaketime(expr=self.param['expr'],outgti=self.gtifile)
+			self.run_nicerclean(ingti=self.gtifile,outevt=self.merged_cl2evt)
+			self.merged_cl2pha = self.extract_spectrum(self.merged_cl2evt)
+		else:
+			self.run_each_obsid()
 		self.save_setup()
 
 

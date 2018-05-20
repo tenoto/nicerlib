@@ -5,8 +5,10 @@ if [ $NAME = 'vicuna' ]; then
 	echo '...setting for machine of "vicuna"'
 	export NICER_DATA_PATH=/Users/enoto/work/nicer/data
 	export NICER_PUBLIC_DATA_PATH=/Users/enoto/work/nicer/data/obs	
+	export NICER_SOFT_PATH=/Users/enoto/work/soft/nicerlib/nicerlib
 	export NICER_RESP_PATH=/Users/enoto/work/niresp
-	export PATH=$NICER_SOFT_PATH/nicerlib/nicerlib/misc:$PATH
+	export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
+	export PATH=$NICER_SOFT_PATH/scripts:$PATH
 elif [ $NAME = 'nebula' ]; then
 	echo '...setting for machine of "nebula"'
 	export NICER_DATA_PATH=/Users/enoto/work/drbv2/nicer/data
