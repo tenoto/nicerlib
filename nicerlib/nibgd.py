@@ -203,7 +203,8 @@ class NicerBackgroundModel():
 		self.IBGevt = '%s/%s_IBG.evt' % (self.outdir,basename)
 		cmd  = 'rm -f %s;' % self.IBGevt
 		cmd  = 'fselect %s %s <<EOF\n' % (self.xrayevt,self.IBGevt)
-		cmd += '(PI >= 1500)&&(PI <= 1700)&&(DEFNULL(PI_RATIO,1)<1.100000+120.000000/PI+0.000000e+00*PI**4))\n'
+		cmd += '(PI >= 1500)&&(PI <= 1700)&&(DEFNULL(PI_RATIO,1)<1.100000+120.000000/PI+0.000000e+00*PI**4)\n'
+		#cmd += '(PI >= 1500)&&(PI <= 1700)\n'
 		cmd += 'EOF\n'
 		print(cmd);os.system(cmd)
 
@@ -244,7 +245,7 @@ class NicerBackgroundModel():
 	def filter_gti_exposure(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		basename = os.path.basename(self.clevt_mpu7).replace('.gz','').replace('_cl.evt','')
+		basename = os.path.basename(self.clevt_mpu7).replace('.gz','').replace('.evt','')
 
 		self.gtifile_expth = '%s/%s_gtisel%d.txt' % (self.outdir,basename,self.exposure_threshold)
 		hdu_evt = pyfits.open(self.clevt_mpu7)
