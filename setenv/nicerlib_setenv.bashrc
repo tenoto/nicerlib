@@ -29,6 +29,8 @@ else
 	echo 'no corresponding computer setup.'
 fi
 
+export NICER_BGDMODEL_PATH=/Users/enoto/Dropbox/enoto/research/nicer/data/mitbgd
+
 export PATH="/Users/enoto/Dropbox/enoto/research/nicer/nisoft/ver3.00/local":$PATH
 
 echo ComputerName    = $NAME
@@ -36,4 +38,5 @@ echo NICER_DATA_PATH = $NICER_DATA_PATH
 echo NICER_PUBLIC_DATA_PATH = $NICER_PUBLIC_DATA_PATH
 echo NICER_SOFT_PATH = $NICER_SOFT_PATH
 echo NICER_RESP_PATH = $NICER_RESP_PATH
+echo NICER_BGDMODEL_PATH = $NICER_BGDMODEL_PATH
 echo PYTHONPATH = $PYTHONPATH
