@@ -8,6 +8,7 @@ import astropy.io.fits as pyfits
 
 from pyheasoft import * 
 from niconst import * 
+from nibgd import * 
 
 NICER_DATA_SUBDIRECTORY_LIST = ['auxil','log','xti'] 
 NICER_OUTPUT_SUBDIRS = ['proc','timing']
@@ -273,6 +274,15 @@ class NicerObservation():
 		print(cmd);os.system(cmd)
 		"""
 
+	def make_background_spectrum(self,inevt,outdir):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		self.nibgd = NicerBackgroundModel(self.obsid_path,outdir)
+		self.nibgd.set_cleaned_event(inevt)
+		self.nibgd.run()
+
+		exit()
+
 class NicerProcess():
 	def __init__(self,args):
 		if args.obsid_path[0] == '@':
@@ -481,6 +491,9 @@ class NicerProcess():
 					sys.stderr.write('file %s does not exist.\n' % self.param['tempo_parfile'])
 					quit()
 				niobs.photonphase(outevt,outbaryevt,tempo_parfile=self.param['tempo_parfile'])
+			if self.param['flag_bgdspectrum']:
+				bgddir = '%s/bgd' % targetdir
+				niobs.make_background_spectrum(inevt=outevt,outdir=bgddir)
 
 	def set_response_files(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -504,6 +517,7 @@ class NicerProcess():
 		print(cmd);os.system(cmd)
 
 		return outpha
+
 
 	"""
 	def plot_spectrum(self):
