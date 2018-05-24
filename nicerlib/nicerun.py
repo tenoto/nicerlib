@@ -3,6 +3,7 @@ import sys
 import yaml
 import glob 
 #import pyfits
+import numpy as np 
 import astropy.io.fits as pyfits
 
 from pyheasoft import * 
