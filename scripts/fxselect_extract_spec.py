@@ -21,6 +21,8 @@ parser.add_option("-r","--rmf",dest="rmf",default=None,
 	action="store",help="rmf file",type="string")
 parser.add_option("-a","--arf",dest="arf",default=None,
 	action="store",help="arf file",type="string")
+parser.add_option("-g","--gtifile",dest="gtifile",default=None,
+	action="store",help="gti file",type="string")
 
 parser.add_option("-d","--phasemin",dest="phasemin",default=None,
 	action="store",help="phase min",type="float")
@@ -62,7 +64,11 @@ xsel
 read event tmp_sel.evt .
 yes
 set phaname PI
-extract spectrum
+"""
+	if options.gtifile != None:
+		cmd += "filter time file %s\n" % options.gtifile
+		cmd += "show filter\n"
+	cmd += """extract spectrum
 save spectrum
 %s
 exit
@@ -81,16 +87,20 @@ xsel
 read event %s .
 yes
 set phaname PI
-extract spectrum
+""" % options.inputevtfits
+	if options.gtifile != None:
+		cmd += "filter time file %s\n" % options.gtifile
+		cmd += "show filter\n"
+	cmd += """extract spectrum
 save spectrum
 %s
 exit
 no
 EOF
-""" % (options.inputevtfits,options.outputpha)
+""" % (options.outputpha)
 	print(cmd);os.system(cmd)
 
-cmd = 'rm -f xselect.log'
+cmd = 'rm -f xselect.log xsel_timefile.asc'
 print(cmd);os.system(cmd)
 
 if options.rmf != None:
