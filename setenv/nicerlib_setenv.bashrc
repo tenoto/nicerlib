@@ -7,30 +7,26 @@ if [ $NAME = 'vicuna' ]; then
 	export NICER_PUBLIC_DATA_PATH=/Users/enoto/work/nicer/data/obs	
 	export NICER_SOFT_PATH=/Users/enoto/work/soft/nicerlib/nicerlib
 	export NICER_RESP_PATH=/Users/enoto/work/niresp
-	export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
-	export PATH=$NICER_SOFT_PATH/scripts:$PATH
 elif [ $NAME = 'nebula' ]; then
 	echo '...setting for machine of "nebula"'
 	export NICER_DATA_PATH=/Users/enoto/work/drbv2/nicer/data
 	export NICER_PUBLIC_DATA_PATH=$NICER_DATA_PATH/obs
 	export NICER_SOFT_PATH=/Users/enoto/work/drbv2/nicer/soft/nicerlib
 	export NICER_RESP_PATH=/Users/enoto/work/niresp
-	export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
-	export PATH=$NICER_SOFT_PATH/scripts:$PATH
 elif [ $NAME = 'llama' ]; then
 	echo '...setting for machine of "fireant"'
 	export NICER_DATA_PATH=/Users/enoto/work/nicer/data
 	export NICER_PUBLIC_DATA_PATH=/Users/enoto/work/nicer/data/obs
 	export NICER_SOFT_PATH=/Users/enoto/work/nicer/soft/nicerlib
 	export NICER_RESP_PATH=/Users/enoto/work/niresp
-	export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
-	export PATH=$NICER_SOFT_PATH/scripts:$PATH
 else
 	echo 'no corresponding computer setup.'
 fi
 
 export NICER_BGDMODEL_PATH=/Users/enoto/Dropbox/enoto/research/nicer/data/mitbgd
 
+export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
+export PATH=$NICER_SOFT_PATH/scripts:$PATH
 export PATH="/Users/enoto/Dropbox/enoto/research/nicer/nisoft/ver3.00/local":$PATH
 
 echo ComputerName    = $NAME
