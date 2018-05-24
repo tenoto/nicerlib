@@ -13,6 +13,7 @@ class NicerBackgroundModel():
 	def __init__(self,obsid_path,outdir,exposure_threshold=60.0,
 		rmffile="/Users/enoto/work/niresp/nicer_v1.02.rmf",
 		arffile="/Users/enoto/work/niresp/ni_xrcall_onaxis_v1.02.arf"):
+
 		self.obsid_path = obsid_path		
 		self.outdir = outdir 
 		self.exposure_threshold = exposure_threshold
@@ -28,6 +29,12 @@ class NicerBackgroundModel():
 		self.inputfile_bgd_param_detail = self.inputfile_bgd_param.replace('.txt','_niprefilter2.txt')
 		#print(self.inputfile_bgd_param)
 		#print(self.inputfile_bgd_param_detail)
+
+		self.check_input_directory()
+		self.set_input_files()
+		self.show_input_files()
+		self.set_header_keywords()
+		self.show_header_keywords()		
 
 	def check_input_directory(self):
 		sys.stdout.write('...Making an object NicerObservation...\n')
@@ -170,6 +177,7 @@ class NicerBackgroundModel():
 		sys.stdout.write('OBJECT   : %s\n' % self.object)		
 		sys.stdout.write('TOTAL_GTI_EXPOSURE : %.3f (s)\n' % self.ufmpu0_total_gti_exposure)
 
+
 	def make_output_directory(self,outdir,flag_recreate=True):
 		sys.stdout.write('=== %s (ObsID=%s) ===\n' % (sys._getframe().f_code.co_name,self.obsid))
 
@@ -195,7 +203,7 @@ class NicerBackgroundModel():
 		self.IBGevt = '%s/%s_IBG.evt' % (self.outdir,basename)
 		cmd  = 'rm -f %s;' % self.IBGevt
 		cmd  = 'fselect %s %s <<EOF\n' % (self.xrayevt,self.IBGevt)
-		cmd += '(PI >= 1500)&&(PI <= 1700)\n'
+		cmd += '(PI >= 1500)&&(PI <= 1700)&&(DEFNULL(PI_RATIO,1)<1.100000+120.000000/PI+0.000000e+00*PI**4))\n'
 		cmd += 'EOF\n'
 		print(cmd);os.system(cmd)
 
@@ -226,6 +234,12 @@ class NicerBackgroundModel():
 		print(cmd);os.system(cmd)
 
 		return outpha
+
+	def set_cleaned_event(self,cleaned_event):
+		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
+
+		self.clevt_mpu7 = cleaned_event
+		print(self.clevt_mpu7)
 
 	def filter_gti_exposure(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
@@ -398,18 +412,14 @@ class NicerBackgroundModel():
 		cmd += 'R outfil="%s" ' % outpha
 		cmd += 'exposure=%.6f ' % total_exposure
 		cmd += 'errmeth=gaussian properr=yes ncomments=0 areascal=NULL clobber=yes'
-		print(cmd);os.system(cmd)
+		print(cmd);
+		os.system(cmd)
 
 		os.chdir(orgdir)
 
 	def run(self):
 		sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-		self.check_input_directory()
-		self.set_input_files()
-		self.show_input_files()
-		self.set_header_keywords()
-		self.show_header_keywords()
 		self.make_output_directory(self.outdir,flag_recreate=True)
 		self.make_bgdmodel_parameter_events()
 		self.filter_gti_exposure()
