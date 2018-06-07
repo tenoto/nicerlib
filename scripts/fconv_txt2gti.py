@@ -82,6 +82,8 @@ f = open('tmp_gti_data_shrink.txt','w')
 flag_first = True
 for line in open(options.inputfile):
 	cols = line.split()
+	if cols[0] == '#':
+		continue
 	tmp_TSTART = cols[0]
 	tmp_TSTOP  = cols[1]
 	if flag_first:
