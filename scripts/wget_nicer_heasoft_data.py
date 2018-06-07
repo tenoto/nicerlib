@@ -82,28 +82,28 @@ for n,[no, row] in enumerate(source.iterrows()):
 		continue 
 
 	target_dir = '%s/%s' % (os.getenv('NICER_PUBLIC_DATA_PATH'),yyyy_mm)
+	print(target_dir)
 
 	if os.path.exists('%s/%s' % (target_dir,obsid)):
 		print("... directory %s already exists." % obsid)
-		continue 
+	else:
+		download_path = '%s/%s/%s' % (FTPPATH_NICER_DATA, yyyy_mm, obsid)
+		dump = '%s %s  %s  %.1f (s) %s\n' % (srcname,obsid,dtime,gexpo, download_path)
+		sys.stdout.write(dump)
 
-	download_path = '%s/%s/%s' % (FTPPATH_NICER_DATA, yyyy_mm, obsid)
-	dump = '%s %s  %s  %.1f (s) %s\n' % (srcname,obsid,dtime,gexpo, download_path)
-	sys.stdout.write(dump)
-
-	for subdir in ['auxil','log','xti']:
-		cmd  = 'wget -q -nH --no-check-certificate --cut-dirs=5 '
-		cmd += '-r -l0 -c -N -np -R \'index*\' -erobots=off --retr-symlinks '
-		cmd += '%s/%s' % (download_path,subdir)
-		print(cmd);os.system(cmd)
-
-	if options.flag_move:
-		if not os.path.exists(target_dir):
-			cmd = 'mkdir -p %s' % target_dir
+		for subdir in ['auxil','log','xti']:
+			cmd  = 'wget -q -nH --no-check-certificate --cut-dirs=5 '
+			cmd += '-r -l0 -c -N -np -R \'index*\' -erobots=off --retr-symlinks '
+			cmd += '%s/%s' % (download_path,subdir)
 			print(cmd);os.system(cmd)
 
-		cmd = 'mv %s %s' % (obsid,target_dir)
-		print(cmd);os.system(cmd)		
+		if options.flag_move:
+			if not os.path.exists(target_dir):
+				cmd = 'mkdir -p %s' % target_dir
+				print(cmd);os.system(cmd)
+
+			cmd = 'mv %s %s' % (obsid,target_dir)
+			print(cmd);os.system(cmd)		
 
 
 
