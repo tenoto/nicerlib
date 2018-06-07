@@ -775,6 +775,27 @@ cmd += '-t %.1f ' % LC_TBIN
 cmd += '-d %.1f -u %.1f ' % (LC_EMIN,LC_EMAX)
 print(cmd);os.system(cmd)
 
+f_cllc_screen_gti_ps = '%s/%s_clmerge_screen_gtisel_lc.ps' % (outdir,prefix)
+cmd = 'lcurve 1 %s ' % f_cllc_screen_gti
+cmd += 'window="-" dtnb=20 nbint=INDEF <<EOF\n'
+cmd += 'null.flc\n' 
+cmd += 'yes\n'
+cmd += '/xw\n'
+cmd += 'lwid 5 \n'
+cmd += 'hard %s/cps\n' % f_cllc_screen_gti_ps
+cmd += 'exit\n'
+cmd += 'EOF\n'
+print(cmd);os.system(cmd)
+
+cmd = 'ps2pdf %s' % f_cllc_screen_gti_ps
+print(cmd);os.system(cmd)
+cmd = 'rm -f %s' % f_cllc_screen_gti_ps
+print(cmd);os.system(cmd)
+cmd = 'mv %s %s' % (os.path.basename(f_cllc_screen_gti_ps).replace('.ps','.pdf'),outdir)
+print(cmd);os.system(cmd)
+cmd = 'rm -f null.flc'
+print(cmd);os.system(cmd)
+
 # ==============================
 # Add GTI information into exposure map 
 # ==============================
