@@ -13,13 +13,6 @@ v.3 2018 0531
 
 with Mikes application 
 """
-
-BGD_LIBRARY_PATH = "/Users/enoto/Dropbox/enoto/research/nicer/data/mitbgd/BGMod_3C50"
-BG_GROUP_3C50_TABLE = "%s/bg_group_3C50.table" % BGD_LIBRARY_PATH
-DAY_NOISE_3C50_TABLE = "%s/day_noise_3C50.table" % BGD_LIBRARY_PATH
-NUM_OF_MPU = 7
-NUM_OF_FPM = 8
-
 import os
 import sys
 import subprocess
@@ -28,15 +21,39 @@ import astropy.io.fits as pyfits
 import argparse
 from datetime import datetime 
 
+BGD_MODEL_VERSION = "BGMod_3C50"
+BGD_LIBRARY_PATH = "/Users/enoto/Dropbox/enoto/research/nicer/data/mitbgd/%s" % BGD_MODEL_VERSION
+BG_GROUP_3C50_TABLE  = "%s/bg_group_3C50.table" % BGD_LIBRARY_PATH
+DAY_NOISE_3C50_TABLE = "%s/day_noise_3C50.table" % BGD_LIBRARY_PATH
+NUM_OF_MPU = 7
+NUM_OF_FPM = 8
+NUM_OF_IBG = 5
+NUM_OF_HREJ = 6
+NUM_OF_NZ = 15
+RMFFILE = '%s/nicer_v1.02.rmf' % os.getenv('NICER_RESP_PATH')
+#ARFFILE = '%s/ni_xrcall_onaxis_v1.02.arf' % os.getenv('NICER_RESP_PATH')
+ARFFILE = '%s/ni_xrcall_onaxis_v1.02_wo_detid14_34.arf' % os.getenv('NICER_RESP_PATH')
+LC_TBIN = 20
+LC_EMIN = 0.2
+LC_EMAX = 15.0
+
+IBG52_HREJ52_pha_pairs = [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],[3,1],[3,2],[3,3],[4,1],[4,2],[4,3],[5,1],[5,2],[5,3],[5,4]]
+
 def get_lc_rate(lcfits):
+	"""
+	Return the average of the 'Rate' column
+	"""
 	hdu = pyfits.open(lcfits)
 	return np.mean(hdu['RATE'].data['RATE'])
 
 class ExposureMap_IBGvsHREJ():
+	"""
+	Exposure map of IBG52 (vertical) and HREJ52 (horizontal)
+	"""
 	def __init__(self):
-		self.matrix_ibg52_hrej52 = np.zeros((6,5))
+		self.matrix_ibg52_hrej52 = np.zeros((NUM_OF_HREJ,NUM_OF_IBG))
 
-	def add(self,IBG52,HREJ52,exposure,NFPM):
+	def identiy_bin(self,IBG52,HREJ52):
 		if IBG52 < 0.10:
 			if HREJ52<0.15: 
 				i = 0; j = 0;
@@ -104,6 +121,11 @@ class ExposureMap_IBGvsHREJ():
 			elif 2.00<=HREJ52<5.00:				
 				i = 5; j = 4;
 
+		return i, j 
+
+	def add(self,IBG52,HREJ52,exposure,NFPM):
+		i, j = self.identiy_bin(IBG52,HREJ52)
+
 		target_phaname = 'bg_group_3C50_ngt_%d%d.pha' % (i+1,j+1)
 		for line2 in open(BG_GROUP_3C50_TABLE):
 			cols2 = line2.split()
@@ -112,6 +134,7 @@ class ExposureMap_IBGvsHREJ():
 				IBG_REF = float(cols2[1])
 				break 
 
+		print(i,j,exposure,IBG52,NFPM)
 		weight = exposure * IBG52 / IBG_REF * NFPM / 52.0
 		self.matrix_ibg52_hrej52[i][j] += weight		
 		return i,j
@@ -123,12 +146,15 @@ class ExposureMap_IBGvsHREJ():
 		return sum(sum(self.matrix_ibg52_hrej52))
 
 	def get_normalized_exposuremap(self):
-		total_exposure = self.get_grand_exposure()
-		return self.matrix_ibg52_hrej52 / total_exposure
+		self.normalized_matrix_ibg52_hrej52 =  self.matrix_ibg52_hrej52 / self.get_grand_exposure()
+		return self.normalized_matrix_ibg52_hrej52
 
 class ExposureMap_NZ():
+	"""
+	Exposure map of NZ52 
+	"""
 	def __init__(self):
-		self.hist_nz52 = np.zeros(15)
+		self.hist_nz52 = np.zeros(NUM_OF_NZ)
 
 	def add(self,NZ52,exposure,NFPM):
 		if NZ52 < 190.0: 
@@ -162,7 +188,6 @@ class ExposureMap_NZ():
 		elif 1600.0 <= NZ52:
 			k = 14
 
-		print(k)
 		target_phaname = 'day_noise_nz%02d.pha' % k
 		if k == 0 or k == 14:
 			weight = 0.0
@@ -185,19 +210,24 @@ class ExposureMap_NZ():
 		return sum(self.hist_nz52)
 
 	def get_normalized_exposuremap(self):
-		total_exposure = self.get_grand_exposure()
-		if total_exposure == 0.0:
-			return self.hist_nz52
+		if self.get_grand_exposure() == 0.0:
+			self.normalized_hist_nz52 = self.hist_nz52
 		else:
-			return self.hist_nz52 / total_exposure
+			self.normalized_hist_nz52 = self.hist_nz52 / self.get_grand_exposure()
+		return self.normalized_hist_nz52
 
-
+# ==============================
+# Check HEASoft environment
+# ==============================
 cmd = 'which fhelp'
 resp = subprocess.Popen(cmd.split(' '),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 if len(resp.stdout.readlines()) == 0:
 	sys.stderr.write('error: set HEASOFT (e.g., heainit)\n')
 	exit()
 
+# ==============================
+# Get input parameters 
+# ==============================
 help_message = """
 (example) %s obsid_path.lst 
 """ % sys.argv[0]
@@ -217,11 +247,16 @@ parser.add_argument('--tbin',dest='tbin',action='store',
 	help='GTI time scale (default 100 sec)', default=100.0) 
 parser.add_argument('--tlimit',dest='tlimit',action='store',
 	help='GTI time scale lower threshold (default 60 sec)', default=60.0) 
+parser.add_argument('--title',dest='title',action='store',
+	help='Title for plotting', default='') 
 #parser.add_argument('--checkoutlier', action='store_true', 
 #	help='flag to check outlier.') 
 args = parser.parse_args()
 print(args)
 
+# ==============================
+# Set up observation path as inputs 
+# ==============================
 obsid_path_list = []
 if args.obsid_path[0] is '@':
 	for line in open(args.obsid_path[1:]):
@@ -230,6 +265,9 @@ else:
 	obsid_path_list.append(args.obsid_path)
 print("obsid_path_list: %s" % obsid_path_list)
 
+# ==============================
+# Prepare output directory 
+# ==============================
 outdir = args.outdir
 if args.recreate:
 	cmd = 'rm -rf %s; mkdir -p %s' % (outdir,outdir)
@@ -242,13 +280,9 @@ print(cmd);os.system(cmd)
 
 prefix = args.prefix
 
-exclude_detid_list = []
-for i in args.exclude.split(','):
-	exclude_detid_list.append('%02d' % int(i))
-print('exclude_detid_list: %s\n' % exclude_detid_list)
-
-num_of_fpm = 56 - 4 - len(exclude_detid_list) 
-
+# ==============================
+# Prepare input ufa / cl event list file 
+# ==============================
 obsid_list  = []
 ufaevt_list = []
 clevt_list  = []
@@ -277,7 +311,32 @@ for obsid_path in obsid_path_list:
 print("ufaevt list: %s" % ufaevt_list)
 print("clevt list: %s" % clevt_list)
 
-### GTI 
+f_ufaevt_list = '%s/%s_ufaevt.lst' % (outdir,prefix)
+f = open(f_ufaevt_list,'w')
+for ufaevt in ufaevt_list:
+	f.write(ufaevt+'\n')
+f.close()
+
+f_clevt_list = '%s/%s_clevt.lst' % (outdir,prefix)
+f = open(f_clevt_list,'w')
+for clevt in clevt_list:
+	f.write(clevt+'\n')
+f.close()
+
+
+# ==============================
+# Set screening of the exlucded DET_ID 
+# ==============================
+exclude_detid_list = []
+for i in args.exclude.split(','):
+	exclude_detid_list.append('%02d' % int(i))
+print('exclude_detid_list: %s\n' % exclude_detid_list)
+
+num_of_fpm = 56 - 4 - len(exclude_detid_list) 
+
+# ==============================
+# Make GTI information file (divided with tbin)
+# ==============================
 outdir_gti = '%s/gti' % outdir
 cmd = 'rm -rf %s; mkdir -p %s' % (outdir_gti,outdir_gti)
 print(cmd);os.system(cmd)
@@ -316,18 +375,13 @@ for clevt in clevt_list:
 f.close()			
 print('GTI: %s' % gti_list)
 
-f_ufaevt_list = '%s/%s_ufaevt.lst' % (outdir,prefix)
-f = open(f_ufaevt_list,'w')
-for ufaevt in ufaevt_list:
-	f.write(ufaevt+'\n')
-f.close()
+if len(gti_list) == 0:
+	sys.stderr.write('no GTI...\n')
+	exit()
 
-f_clevt_list = '%s/%s_clevt.lst' % (outdir,prefix)
-f = open(f_clevt_list,'w')
-for clevt in clevt_list:
-	f.write(clevt+'\n')
-f.close()
-
+# ==============================
+# Slow-only ufa file 
+# ==============================
 # 4.1 Make trimmed, slow-chain ufa files to support down-stream queries 
 f_ufaslow = '%s/%s_ufaslow.evt' % (outdir,prefix)
 cmd  = 'niextract-events '
@@ -340,7 +394,11 @@ print(cmd);os.system(cmd)
 f_ufaslow += '.gz'
 print(f_ufaslow)
 
+# ==============================
+# Trumpet-selected ufa file 
+# ==============================
 # 4.2 Make trumpet-selected ufa files to screen FPMs & evaluate IBG, NZ
+
 f_ufatsel = '%s/%s_ufatsel.evt' % (outdir,prefix)
 cmd  = 'fselect %s %s ' % (f_ufaslow,f_ufatsel)
 cmd += '"ISNULL(PI_RATIO) || PI_RATIO < (1.1+120/PI)" '
@@ -351,6 +409,9 @@ print(cmd);os.system(cmd)
 f_ufatsel += '.gz'
 print(f_ufatsel)
 
+# ==============================
+# Hatched-rejected ufa file 
+# ==============================
 # 4.3 Make hatchet-rejected ufa files to evaluate HREJ
 f_ufahrej = '%s/%s_ufahrej.evt' % (outdir,prefix)
 cmd  = 'fselect %s %s ' % (f_ufaslow,f_ufahrej)
@@ -466,6 +527,9 @@ if args.checkoutlier:
 	flog.close()	
 """
 
+# ==============================
+# Merge clean cl events 
+# ==============================
 # 4.5 FPM Screening the cl event lists prior to extracting spectra per GTI
 f_clevt_merge = '%s/%s_clmerge.evt' % (outdir,prefix)
 cmd  = 'ftmerge @%s %s' % (f_clevt_list,f_clevt_merge)
@@ -475,6 +539,9 @@ cmd  = 'gzip %s' % f_clevt_merge
 print(cmd);os.system(cmd)
 f_clevt_merge += '.gz'
 
+# ==============================
+# Screen DET_ID (exclude noisy modules) for cleam events 
+# ==============================
 # screen of detid 
 f_clevt_screen = '%s/%s_clmerge_screen.evt' % (outdir,prefix)
 if len(exclude_detid_list) == 0:
@@ -493,6 +560,9 @@ cmd  = 'gzip %s' % f_clevt_screen
 print(cmd);os.system(cmd)
 f_clevt_screen += '.gz'
 
+# ==============================
+# Screen DET_ID (exclude noisy modules) for ufa events [Trumpet-selected]
+# ==============================
 # 4.6 FPM Screening ufa event lists prior to extracting IBG, HREJ, NZ
 # do 4.2 fselect command with addition "(DET_ID != 14) && (DET_ID != 34)"
 # do 4.3 fselect command with addition "(DET_ID != 14) && (DET_ID != 34)"
@@ -514,6 +584,9 @@ cmd  = 'gzip %s' % f_ufatsel_screen
 print(cmd);os.system(cmd)
 f_ufatsel_screen += '.gz'
 
+# ==============================
+# Screen DET_ID (exclude noisy modules) for ufa events [Hatched-rejected]
+# ==============================
 f_ufahrej_screen = '%s/%s_ufahrej_screen.evt' % (outdir,prefix)
 if len(exclude_detid_list) == 0:
 	cmd = 'cp %s %s ' % (f_ufahrej,f_ufahrej_screen)
@@ -531,6 +604,9 @@ cmd  = 'gzip %s' % f_ufahrej_screen
 print(cmd);os.system(cmd)
 f_ufahrej_screen += '.gz'
 
+# ==============================
+# Make cleaned spectrum / IBG, HREJ, NZ light curves for each GTI
+# ==============================
 # Make spectra and evaluate parameters for BG Mdeling
 # 6.1 xselect: extract spectra, per GTI, from event lists
 # for selected FPMs to obtain target spectra
@@ -667,8 +743,44 @@ mv xsel_timefile.asc xselect.log %s
 fin.close()
 flog.close()
 
+# ==============================
+# Extract source spectrum 
+# ==============================
+f_gti_fits = '%s/%s_src.gti' % (outdir,prefix)
+cmd  = 'fconv_txt2gti.py '
+cmd += '-i %s ' % f_gti_list2
+cmd += '-o %s ' % f_gti_fits
+print(cmd);os.system(cmd)
+
+f_clevt_screen_gti = '%s/%s_clmerge_screen_gtisel.evt' % (outdir,prefix)
+cmd = 'nicerclean '
+cmd += 'infile=%s ' % f_clevt_screen
+cmd += 'outfile=%s ' % f_clevt_screen_gti
+cmd += 'gtifile=%s ' % f_gti_fits
+print(cmd);os.system(cmd)
+
+f_clpha_screen_gti = '%s/%s_clmerge_screen_gtisel.pha' % (outdir,prefix)
+cmd = 'fxselect_extract_spec.py '
+cmd += '-i %s ' % f_clevt_screen_gti
+cmd += '-o %s ' % f_clpha_screen_gti
+cmd += '-r %s ' % RMFFILE
+cmd += '-a %s ' % ARFFILE
+print(cmd);os.system(cmd)
+
+f_cllc_screen_gti = '%s/%s_clmerge_screen_gtisel.lc' % (outdir,prefix)
+cmd = 'fxselect_extract_curve.py '
+cmd += '-i %s ' % f_clevt_screen_gti
+cmd += '-o %s ' % f_cllc_screen_gti
+cmd += '-t %.1f ' % LC_TBIN
+cmd += '-d %.1f -u %.1f ' % (LC_EMIN,LC_EMAX)
+print(cmd);os.system(cmd)
+
+# ==============================
+# Add GTI information into exposure map 
+# ==============================
 expmap_IBGvsHREJ = ExposureMap_IBGvsHREJ()
 expmap_NZ = ExposureMap_NZ()
+
 f_gti_list3 = '%s/%s_gti.lst' % (outdir,prefix)
 flog = open(f_gti_list3,'w')
 dump = '# START STOP ID ObsID EXP(s) NFPM IBG(cps) HREJ(cps) NZ(cps) IBG52 HREJ52 NZ52 i_IBG j_HREJ k_NZ'
@@ -686,44 +798,113 @@ for line in open(f_gti_list2):
 	if not (IBG52 <= 10.0 and HREJ52 <= 5.0 and NZ52 <= 1600.0):
 		print("skip...")
 		continue
-	i, j = expmap_IBGvsHREJ.add(IBG52,HREJ52,texp,NFPM)
+	i, j = expmap_IBGvsHREJ.identiy_bin(IBG52,HREJ52)
+	if not [i,j] in IBG52_HREJ52_pha_pairs:
+		print("skip...")
+		continue
+	expmap_IBGvsHREJ.add(IBG52,HREJ52,texp,NFPM)
 	k = expmap_NZ.add(NZ52,texp,NFPM)
 	flog.write(line.strip() + '%d %d %d\n' % (i, j, k))
 expmap_IBGvsHREJ.show()
 expmap_NZ.show()
 flog.close()
 
+# ==============================
+# Normalize the exposure map 
+# ==============================
 norm_expmap_IBGvsHREJ = expmap_IBGvsHREJ.get_normalized_exposuremap() 
 norm_expmap_NZ = expmap_NZ.get_normalized_exposuremap()
 print(norm_expmap_IBGvsHREJ)
 print(norm_expmap_NZ)
 
+# ==============================
+# mathpha 
+# ==============================
 expr_list = []
-for i in range(6):
-	for j in range(5):
-		bg_pha = '%s/bg_group_3C50_ngt_%d%d.pha' % (BGD_LIBRARY_PATH,i+1,j+1)
+for i in range(NUM_OF_HREJ):
+	for j in range(NUM_OF_IBG):
+		bg_pha = '%s/bg_group_3C50_ngt_%d%d.pha' % (BGD_MODEL_VERSION,i+1,j+1)
 		print(i,j,norm_expmap_IBGvsHREJ[i][j],bg_pha)
 		if norm_expmap_IBGvsHREJ[i][j] > 0.0:
-			expr_list.append('%s * %.6f ' % (bg_pha,norm_expmap_IBGvsHREJ[i][j]))
+			expr_list.append("'%s' * %.6f " % (bg_pha,norm_expmap_IBGvsHREJ[i][j]))
 
-for k in range(1,14):
-	noise_pha = '%s/day_noise_nz%02d.pha' % (BGD_LIBRARY_PATH,k)
+for k in range(1,NUM_OF_NZ-1):
+	noise_pha = '%s/day_noise_nz%02d.pha' % (BGD_MODEL_VERSION,k)
 	print(k,norm_expmap_NZ[k],noise_pha)
 	if norm_expmap_NZ[k] > 0.0:
-		expr_list.append('%s * %.6f' % (noise_pha,norm_expmap_NZ[k]))
+		expr_list.append("'%s' * %.6f" % (noise_pha,norm_expmap_NZ[k]))
 print(expr_list)		
 
-expr = ''
+f_mathpha_expr = '%s/%s_mathpha_expr.txt' % (outdir,prefix)
+f = open(f_mathpha_expr,'w')
 for i in expr_list:
-	expr += '%s' % i
+	f.write('%s' % i)
 	if expr_list.index(i) < len(expr_list)-1:
-		expr += ' + '
-print(expr)		
+		f.write(' + ')
+f.close()
 
+cmd = 'ln -s %s .' % BGD_LIBRARY_PATH
+print(cmd);os.system(cmd)
+
+f_bgd_pha = '%s/%s_mitbgd_%s.pha' % (outdir,prefix,BGD_MODEL_VERSION)
 cmd  = 'mathpha '
-cmd += '"%s" ' % expr
-cmd += 'R outfil="test.pha" '
-cmd += 'exposure=1.0 '
+cmd += 'expr=@%s ' % f_mathpha_expr
+cmd += 'units=R outfil="%s" ' % f_bgd_pha
+cmd += 'exposure=1.0 ' 
+#cmd += 'exposure=%s ' % f_clpha_screen_gti
 cmd += 'errmeth=gaussian properr=yes ncomments=0 areascal=NULL clobber=yes'
-print(cmd)
+print(cmd);os.system(cmd)
+
+hdu = pyfits.open(f_clpha_screen_gti)
+src_exposure = float(hdu['SPECTRUM'].header['EXPOSURE'])
+for extnum in [1]:
+	cmd = 'fparkey %.7f %s+%d EXPOSURE' % (src_exposure,f_bgd_pha,extnum)
+	print(cmd);os.system(cmd)
+
+cmd = 'rm -f %s' % BGD_MODEL_VERSION
+print(cmd);os.system(cmd)
+
+# ==============================
+# xspec show 
+# ==============================
+f_read_xcm = '%s/%s_read.xcm' % (outdir,prefix)
+f = open(f_read_xcm,'w')
+dump = 'data 1 %s\n' % f_clpha_screen_gti 
+dump += 'back 1 %s\n' % f_bgd_pha
+dump += 'data 2 %s\n' % f_clpha_screen_gti
+dump += 'data 3 %s\n' % f_bgd_pha
+dump += 'resp 3 %s\n' % RMFFILE
+dump += 'arf 3 %s\n' % ARFFILE
+dump += 'ignore 1-3:**-0.2 15.0-**\n'
+dump += 'setplot energy\n'
+f.write(dump)
+f.close()
+
+f_pha_ps = '%s/%s_spec.ps' % (outdir,prefix)
+cmd = 'xspec<<EOF\n'
+cmd += '@%s\n' % f_read_xcm
+cmd += 'setp rebin 10 100\n'
+cmd += 'ipl ld\n'
+cmd += 'lwid 5 on 1..100\n'
+cmd += 'lwid 5 \n'
+cmd += 'la t %s \n' % args.title 
+cmd += 'time off\n'
+cmd += 'hard %s/cps\n' % f_pha_ps 
+cmd += 'quit\n'
+cmd += 'quit\n'
+print(cmd);os.system(cmd)
+
+cmd = 'ps2pdf %s' % f_pha_ps
+print(cmd);os.system(cmd)
+
+f_pha_pdf = os.path.basename(f_pha_ps.replace('.ps','.pdf'))
+cmd = 'mv %s %s' % (f_pha_pdf, outdir)
+print(cmd);os.system(cmd)
+
+cmd = 'rm -f %s ' % f_pha_ps
+print(cmd);os.system(cmd)
+
+
+
+
 
