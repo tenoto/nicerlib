@@ -701,7 +701,7 @@ print(norm_expmap_NZ)
 expr_list = []
 for i in range(6):
 	for j in range(5):
-		bg_pha = '%s/bg_group_3C50_ngt_%d%d.pha' % (BGD_LIBRARY_PATH,i,j)
+		bg_pha = '%s/bg_group_3C50_ngt_%d%d.pha' % (BGD_LIBRARY_PATH,i+1,j+1)
 		print(i,j,norm_expmap_IBGvsHREJ[i][j],bg_pha)
 		if norm_expmap_IBGvsHREJ[i][j] > 0.0:
 			expr_list.append('%s * %.6f ' % (bg_pha,norm_expmap_IBGvsHREJ[i][j]))
