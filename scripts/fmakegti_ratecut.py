@@ -219,6 +219,8 @@ else:
 			f.write(dump)
 			TSTART = tmp_TSTART 
 		prev_TSTOP = tmp_TSTOP
+dump = '%s %s\n' % (TSTART,prev_TSTOP)
+f.write(dump)		
 f.close()
 
 cmd  = 'ftcreate gti_columns.txt tmp_gti_data_shrink.txt %s headfile=gti_header.txt extname="GTI" clobber=yes\n' % options.outputgti
