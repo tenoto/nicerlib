@@ -1,0 +1,2 @@
+nimaketime_expr: "(FPM_OVERONLY_COUNT<1.0).and.(FPM_UNDERONLY_COUNT<20.0)"
+gtiexpr_basestr: "o1u20cut"
