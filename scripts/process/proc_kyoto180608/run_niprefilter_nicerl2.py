@@ -30,9 +30,9 @@ parser.add_argument('--indir', metavar='indir',type=str,
 	help='Input directory name. The directory should be a single NICER observation directory, which in turn contains xti/{events_uf,events_cl,hk,auxil} subdirectories.')
 parser.add_argument('--fparam', metavar='fparam',type=str,        
 	help='yaml file for input parameters.')
-parser.add_argument("-r", "--recreate",action="store_true",
-	dest="flag_recreate", default=False,
-	help='recreate flag.')
+#parser.add_argument("-r", "--recreate",action="store_true",
+#	dest="flag_recreate", default=False,
+#	help='recreate flag.')
 args = parser.parse_args()
 print(args)
 
@@ -86,18 +86,47 @@ print(cmd);os.system(cmd)
 fname_log_nimaketime = '%s/3_nimaketime.log' % dir_log
 cmd = 'nimaketime infile=%s outfile=%s expr="%s" outexprfile="NONE" >& %s' % (fname_mkffile, fname_gtifile, param['nimaketime_expr'], fname_log_nimaketime)
 print(cmd);os.system(cmd)
-exit()
 
 # ==============================
 # 4. nicermergeclean - combine per-MPU data and filter/screen
 # ==============================
-fname_ufaevt = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt' % (args.indir,obsid)
-fname_clevt  = '%s/xti/event_cl/ni%s_0mpu7_cl.evt' % (args.indir,obsid)
+fname_log_nicermergeclean = '%s/4_nicermergeclean.log' % dir_log
+fname_ufaevt = '%s/xti/event_cl/ni%s_0mpu7_ufa_%s.evt' % (args.indir,obsid,param['gtiexpr_basestr'])
+fname_clevt  = '%s/xti/event_cl/ni%s_0mpu7_cl_%s.evt' % (args.indir,obsid,param['gtiexpr_basestr'])
 cmd  = 'nicermergeclean infiles=@%s ' % fname_outfilefile
 cmd += 'ufafile=%s ' % fname_ufaevt
 cmd += 'clfile=%s ' % fname_clevt
 cmd += 'gtifile=%s ' % fname_gtifile
+cmd += '>& %s ' % fname_log_nicermergeclean
 print(cmd);os.system(cmd)
+
+cmd = 'gzip %s\n;' % fname_ufaevt
+cmd += 'gzip %s\n;' % fname_clevt
+print(cmd);os.system(cmd)
+
+fname_ufaevt += '.gz'
+fname_clevt += '.gz'
+
+"""
+                obsid = obsid_path.strip().split('/')[-1]
+                ufaevt = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (obsid_path,obsid)
+
+                hdu = pyfits.open(ufaevt)
+                exposure = hdu[1].header['EXPOSURE']
+                date_obs = hdu[1].header['DATE-OBS']
+
+                subdir = '%s/%s' % (outdir,obsid)
+                title = 'ni%s_%s_%.1fs' % (obsid,date_obs,exposure)
+                cmd = 'generate_mitbgd_3C50_long.py %s ' % obsid_path
+                cmd += '--outdir %s --recreate ' % subdir
+                cmd += '--prefix ni%s ' % obsid
+                cmd += '--tbin %.1f ' % tbin
+                cmd += '--title %s ' % title 
+                print(cmd);os.system(cmd)
+        except:
+                print("skip....%s" % obsid_path)
+
+"""
 
 
 
