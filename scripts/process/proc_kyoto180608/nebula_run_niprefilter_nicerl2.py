@@ -32,6 +32,10 @@ if not os.path.exists(args.outdir):
 proc_outdir = '%s/%s' % (args.outdir,args.obsid)
 print(proc_outdir)
 
+if args.flag_recreate:
+	cmd = 'rm -rf %s' % proc_outdir
+	print(cmd);os.system(cmd)
+
 cmd  = 'cp -r %s %s' % (obsid_path,args.outdir)
 print(cmd);os.system(cmd)
 
