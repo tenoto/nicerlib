@@ -1,2 +1,6 @@
 nimaketime_expr: "(FPM_OVERONLY_COUNT<1.0).and.(FPM_UNDERONLY_COUNT<20.0)"
 gtiexpr_basestr: "o1u20cut"
+lc_tbin: 20.0
+lc_emin: 0.2
+lc_emax: 15.0 
+mitbgd_tbin: 200.0
