@@ -17,6 +17,7 @@ import os
 import sys 
 import yaml 
 import argparse
+import astropy.io.fits as pyfits 
 
 # ==============================
 # Get input parameters 
@@ -54,7 +55,6 @@ dir_log  = '%s/log' % dir_proc
 cmd = 'mkdir -p %s' % dir_log
 print(cmd);os.system(cmd)
 
-fname_gtifile = '%s/ni%s_%s.gti' % (dir_proc,obsid,param['gtiexpr_basestr'])
 
 # ==============================
 # 1. niprefilter2 - create augmented NICER-specific filter file
@@ -73,7 +73,7 @@ print(cmd);os.system(cmd)
 # 2. nicercal - apply standard NICER calibration
 # ==============================
 fname_log_nicercal = '%s/2_nicercal.log' % dir_log
-fname_outfilefile = '%s/ufalist.lis' % dir_proc
+fname_outfilefile = '%s/2_nicercal_ufalist.lis' % dir_log
 cmd = 'nicercal indir=%s outfilefile=%s >& %s' % (args.indir,fname_outfilefile,fname_log_nicercal)
 print(cmd);os.system(cmd)
 
@@ -84,7 +84,9 @@ print(cmd);os.system(cmd)
 # 3. nimaketime - create standard screening good time intervals
 # ==============================
 fname_log_nimaketime = '%s/3_nimaketime.log' % dir_log
-cmd = 'nimaketime infile=%s outfile=%s expr="%s" outexprfile="NONE" >& %s' % (fname_mkffile, fname_gtifile, param['nimaketime_expr'], fname_log_nimaketime)
+fname_expr_nimaketime = '%s/3_nimaketime.expr' % dir_log
+fname_gtifile = '%s/ni%s_%s.gti' % (dir_proc,obsid,param['gtiexpr_basestr'])
+cmd = 'nimaketime infile=%s outfile=%s expr="%s" outexprfile="%s" >& %s' % (fname_mkffile, fname_gtifile, param['nimaketime_expr'], fname_expr_nimaketime, fname_log_nimaketime)
 print(cmd);os.system(cmd)
 
 # ==============================
@@ -100,35 +102,27 @@ cmd += 'gtifile=%s ' % fname_gtifile
 cmd += '>& %s ' % fname_log_nicermergeclean
 print(cmd);os.system(cmd)
 
-cmd = 'gzip %s\n;' % fname_ufaevt
-cmd += 'gzip %s\n;' % fname_clevt
+cmd = 'gzip %s;\n' % fname_ufaevt
+cmd += 'gzip %s;\n' % fname_clevt
 print(cmd);os.system(cmd)
 
 fname_ufaevt += '.gz'
 fname_clevt += '.gz'
 
-"""
-                obsid = obsid_path.strip().split('/')[-1]
-                ufaevt = '%s/xti/event_cl/ni%s_0mpu7_ufa.evt.gz' % (obsid_path,obsid)
+# ==============================
+# 5. make_bgdspec_mit3C50.py
+# ==============================
+dir_speclc = '%s/speclc' % dir_proc
+prefix = 'ni%s_%s' % (obsid,param['gtiexpr_basestr'])
 
-                hdu = pyfits.open(ufaevt)
-                exposure = hdu[1].header['EXPOSURE']
-                date_obs = hdu[1].header['DATE-OBS']
-
-                subdir = '%s/%s' % (outdir,obsid)
-                title = 'ni%s_%s_%.1fs' % (obsid,date_obs,exposure)
-                cmd = 'generate_mitbgd_3C50_long.py %s ' % obsid_path
-                cmd += '--outdir %s --recreate ' % subdir
-                cmd += '--prefix ni%s ' % obsid
-                cmd += '--tbin %.1f ' % tbin
-                cmd += '--title %s ' % title 
-                print(cmd);os.system(cmd)
-        except:
-                print("skip....%s" % obsid_path)
-
-"""
-
-
+cmd  = 'make_bgdspec_mit3C50.py '
+cmd += '%s %s' % (fname_ufaevt,fname_clevt)
+cmd += '--outdir %s ' % dir_speclc
+cmd += '--prefix %s ' % prefix
+cmd += '--tbin %.1f ' % param['mitbgd_tbin']
+cmd += '--lctbin %.1f --lcemin %.1f --lcemax %.1f ' % (
+        param['lc_tbin'],param['lc_emin'],param['lc_emax'])
+print(cmd);os.system(cmd)
 
 
 
