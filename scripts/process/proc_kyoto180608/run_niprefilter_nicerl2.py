@@ -116,7 +116,7 @@ dir_speclc = '%s/speclc' % dir_proc
 prefix = 'ni%s_%s' % (obsid,param['gtiexpr_basestr'])
 
 cmd  = 'make_bgdspec_mit3C50.py '
-cmd += '%s %s' % (fname_ufaevt,fname_clevt)
+cmd += '%s %s ' % (fname_ufaevt,fname_clevt)
 cmd += '--outdir %s ' % dir_speclc
 cmd += '--prefix %s ' % prefix
 cmd += '--tbin %.1f ' % param['mitbgd_tbin']
