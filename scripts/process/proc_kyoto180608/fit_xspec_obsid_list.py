@@ -38,6 +38,10 @@ parser.add_argument('--plot_ymin', metavar='plot_ymin',type=float,
 	help='plot_ymin',default=3e-4)
 parser.add_argument('--plot_ymax', metavar='plot_ymax',type=float,        
 	help='plot_ymax',default=300)
+parser.add_argument('--plot_xmin', metavar='plot_xmin',type=float,        
+	help='plot_xmin',default=0.2)
+parser.add_argument('--plot_xmax', metavar='plot_xmax',type=float,        
+	help='plot_xmax',default=10.0)
 args = parser.parse_args()
 print(args)
 
@@ -100,7 +104,7 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	title = '%s %s %s (%.1f s)' % (objectname, obsid, date_obs, exposure)
 	subtitle += 'fit at %.1f-%.1f keV' % (emin,emax)
 
-	fname_fit_basename = '%s/%s_fit' % (dir_log,os.path.splitext(os.path.basename(src_grp_pha))[0])
+	fname_fit_basename = '%s_fit' % (os.path.splitext(os.path.basename(src_grp_pha))[0])
 	fname_fit_log = '%s/%s_fit.log' % (dir_log,os.path.splitext(os.path.basename(src_grp_pha))[0])
 	fname_fit_xcm = fname_fit_log.replace('.log','.xcm')
 	fname_fit_ps = fname_fit_log.replace('.log','.ps')
@@ -121,7 +125,7 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	cmd += 'fit\n'
 	cmd += 'thaw 1 \n' 
 	cmd += 'fit\n'
-	cmd += 'setplot add\n'
+	#cmd += 'setplot add\n'
 	cmd += 'log %s\n' % fname_fit_log 
 	cmd += 'show rate\n'
 	cmd += 'show fit\n'
@@ -143,9 +147,9 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	cmd += 'lwid 5 on 1..100 \n'	
 	cmd += 'csize 1.1\n'
 	cmd += 'lab pos y 2.8\n'
-	cmd += 'r x 0.4 15\n'
-	cmd += 'r y %s %s\n' % (ymin,ymax)
-	cmd += 'r y2 %s %s\n' % (y2min,y2max)
+	cmd += 'r x %.1f %.1f\n' % (xmin,xmax)
+	cmd += 'r y %.1e %.1e\n' % (ymin,ymax)
+	cmd += 'r y2 %.1f %.1f\n' % (y2min,y2max)
 	cmd += 'col 2 on 2\n'
 	cmd += 'win 2\n'
 	cmd += 'LAB  2 COL 2 LIN 0 100 JUS Lef POS 0.200000003 0 " "\n'
@@ -167,7 +171,30 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	if flag_execute:
 		os.system(cmd)
 
-	cmd = 'mv %s.{qdp,pco} %s' % (fname_fit_basename,os.path.dirname(fname_fit_ps))
+	cmd  = 'echo "NO NO NO NO NO" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "0.35 0.15 3.47e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "0.75 0.25 1.40e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "1.50 0.50 6.85e-02 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "3.50 1.50 5.93e-02 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "7.50 2.50 3.90e-02 0" >> %s.qdp;\n' % fname_fit_basename 
+	cmd += 'echo "12.50 2.50 2.51e-02 0" >> %s.qdp;\n' % fname_fit_basename
+	print(cmd);os.system(cmd)
+
+	cmd  = 'qdp %s.qdp<<EOF\n' % fname_fit_basename
+	cmd += '/xw\n'
+	cmd += '@%s.pco\n' % fname_fit_basename
+	cmd += 'line step on 5\n' 
+	cmd += 'col 8 on 5\n'
+	cmd += 'hard %s_lim.ps/cps\n' % fname_fit_basename
+	cmd += 'exit\n'
+	print(cmd);os.system(cmd)
+
+	cmd = 'ps2pdf %s_lim.ps' % fname_fit_basename
+	print(cmd);os.system(cmd)	
+	cmd = 'rm -f %s_lim.ps' % fname_fit_basename
+	print(cmd);os.system(cmd)	
+
+	cmd = 'mv %s.{qdp,pco} %s_lim.pdf %s' % (fname_fit_basename,fname_fit_basename,os.path.dirname(fname_fit_ps))
 	print(cmd);os.system(cmd)
 
 	return fname_fit_log
@@ -303,7 +330,8 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 		min_significance=args.min_significance,max_bins=args.max_bins)
 	fname_fit_log = fit_spec(src_grp_pha,bgd_pha,fname_input_xcm,
 		emin=args.fit_emin, emax=args.fit_emax, 
-		subtitle=args.subtitle,ymin=args.plot_ymin,ymax=args.plot_ymax)
+		subtitle=args.subtitle,ymin=args.plot_ymin,ymax=args.plot_ymax,
+		xmin=args.plot_xmin,xmax=args.plot_xmax)
 
 	rate, rate_err = get_rate(fname_fit_log)
 	rchi2, chi2, dof, prov = get_chisqure(fname_fit_log)
