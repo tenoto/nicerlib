@@ -26,9 +26,13 @@ fi
 export NICER_BGDMODEL_PATH=/Users/enoto/Dropbox/enoto/research/nicer/data/mitbgd
 
 export PYTHONPATH=$NICER_SOFT_PATH:$PYTHONPATH
-export PATH=$NICER_SOFT_PATH/scripts/repository:$NICER_SOFT_PATH/scripts/mitbgd/3C50:$NICER_SOFT_PATH/scripts:$PATH
-export PATH=$NICER_SOFT_PATH/scripts/process/proc_kyoto180608:$PATH
+
+export PATH=$NICER_SOFT_PATH/scripts:$PATH
 export PATH="/Users/enoto/Dropbox/enoto/research/nicer/nisoft/ver3.00/local":$PATH
+export PATH=$NICER_SOFT_PATH/scripts/repository:$PATH
+export PATH=$NICER_SOFT_PATH/scripts/mitbgd/3C50:$PATH
+export PATH=$NICER_SOFT_PATH/scripts/process/proc_kyoto180608:$PATH
+export PATH=$NICER_SOFT_PATH/scripts/speccorr:$PATH
 
 echo ComputerName    = $NAME
 echo NICER_DATA_PATH = $NICER_DATA_PATH
