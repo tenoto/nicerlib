@@ -67,7 +67,7 @@ print(cmd);os.system(cmd)
 DOWNLOAD_SOURCE_LIST = []
 for line in open(fname_original_download_source_list):
 	cols = line.split()
-	if cols[0] == '#':
+	if len(cols) == 0 or cols[0] == '#':
 		continue
 	DOWNLOAD_SOURCE_LIST.append(cols[0])
 print(DOWNLOAD_SOURCE_LIST)	
