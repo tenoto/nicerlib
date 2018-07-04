@@ -358,11 +358,15 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 	hdu = pyfits.open(src_pha)
 
 	date_obs = hdu[1].header['DATE-OBS']
+	date_end = hdu[1].header['DATE-END']	
 	obsid    = hdu[1].header['OBS_ID']
 	exposure = float(hdu[1].header['EXPOSURE'])
 	bgd_pha  = glob.glob('%s/ni%s_*_BGMod_3C50.pha' % (dir_pha,obsid))[0]
 
-	mjd_utc = get_MJD_UTC(date_obs)
+	mjd_utc_start = get_MJD_UTC(date_obs)
+	mjd_utc_stop = get_MJD_UTC(date_end)	
+	mjd_utc_center = 0.5 * (mjd_utc_start+mjd_utc_stop)
+	mjd_utc_width = 0.5 * (-mjd_utc_start+mjd_utc_stop)	
 
 	src_grp_pha = bin_spec(src_pha,bgd_pha,
 		min_significance=args.min_significance,max_bins=args.max_bins)
@@ -404,7 +408,10 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 	if model_type == 'pl':
 		row_list.append([
 			date_obs,
-			mjd_utc,
+			mjd_utc_start,
+			mjd_utc_stop,
+			mjd_utc_center,	
+			mjd_utc_width,				
 			obsid,
 			exposure,
 			rate,
@@ -428,7 +435,10 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 	else:
 		row_list.append([
 			date_obs,
-			mjd_utc, 
+			mjd_utc_start, 
+			mjd_utc_stop,	
+			mjd_utc_center,	
+			mjd_utc_width,			
 			obsid,
 			exposure,
 			rate,
@@ -457,7 +467,10 @@ fname_main_log = '%s/%s_fit.csv' % (dir_main,args.outdir)
 df = pd.DataFrame(row_list,
 	columns=[
 	'DATE-OBS',
-	'MJD_UTC',
+	'MJD_UTC_START',
+	'MJD_UTC_STOP',	
+	'MJD_UTC_CENTER',		
+	'MJD_UTC_WIDTH',			
 	'OBS_ID',
 	'EXPOSURE(s)',
 	'rate',
