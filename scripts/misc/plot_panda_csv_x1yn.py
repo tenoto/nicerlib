@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 
 import matplotlib as mpl
 mpl.rcParams['font.family'] = 'Times New Roman'
+mpl.rcParams['font.size'] = '12'
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['xtick.top'] = 'True'
 mpl.rcParams['ytick.right'] = 'True'
@@ -44,23 +45,41 @@ num_of_ycol = len(param['ycolumns'])
 
 fig, axes = plt.subplots(num_of_ycol,1,sharex=True,sharey=False,
 	figsize=(param['panel_size'][0],param['panel_size'][1]*num_of_ycol))
+mask = (param['rchi2range'][0] < df['rchi2']) & (df['rchi2'] < param['rchi2range'][1]) 
 for i in range(num_of_ycol):
 	x = df[param['xcolumn']].values - param['xoffset']
 	y = (df[param['ycolumns'][i]].values)/float(param['ynorms'][i])
 	if param['yerrors'][i][0] == "None":
-		axes[i].plot(x,y,"o",markersize=8,markerfacecolor="r",markeredgecolor="k")	
+		if param['xerror'][0] == "None":
+			axes[i].plot(x[mask],y[mask],"o",markersize=param['markersize'],markerfacecolor="r",markeredgecolor="k")	
+		else:
+			xerr_min = (df[param['xerror'][0]].values)
+			xerr_max = (df[param['xerror'][1]].values)			
+			axes[i].errorbar(x[mask],y[mask],xerr=[xerr_min[mask],xerr_max[mask]],
+				"o",markersize=param['markersize'],markerfacecolor="r",markeredgecolor="k")				
 	else:
 		yerr_min = (df[param['yerrors'][i][0]].values)/float(param['ynorms'][i])
 		yerr_max = (df[param['yerrors'][i][0]].values)/float(param['ynorms'][i])
-		axes[i].errorbar(x,y,yerr=[yerr_min,yerr_max],
-			fmt="o",markersize=8,markerfacecolor="r",markeredgecolor="k",
-			color="k")		
-
+		if param['xerror'][0] == "None":
+			axes[i].errorbar(x[mask],y[mask],yerr=[yerr_min[mask],yerr_max[mask]],
+				fmt="o",markersize=param['markersize'],markerfacecolor="r",markeredgecolor="k",
+				color="k")	
+		else:
+			axes[i].errorbar(x[mask],y[mask],
+				xerr=[xerr_min[mask],xerr_max[mask]],
+				yerr=[yerr_min[mask],yerr_max[mask]],
+				fmt="o",markersize=param['markersize'],markerfacecolor="r",markeredgecolor="k",
+				color="k")	
+	for xc in param['vertical_lines']:
+		xc2 = xc - param['xoffset']
+		axes[i].axvline(x=xc2,linestyle='--')
+	if i == 0:
+		axes[i].set_title(param['title'])
 	if i == num_of_ycol - 1:
-		plt.xlabel(param['xlabel'])
+		plt.xlabel(param['xlabel'])		
 	axes[i].set_xlim(param['xranges'])
 	axes[i].set_ylabel(param['ylabels'][i])
 	axes[i].set_autoscaley_on(False)
 	axes[i].set_ylim(param['yranges'][i])
 plt.subplots_adjust(wspace=0, hspace=0)
-plt.savefig("sample.pdf")
+plt.savefig(param['outpdf'])
