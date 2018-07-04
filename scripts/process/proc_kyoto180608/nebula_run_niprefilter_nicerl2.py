@@ -32,6 +32,11 @@ if not os.path.exists(args.outdir):
 proc_outdir = '%s/%s' % (args.outdir,args.obsid)
 print(proc_outdir)
 
+if os.path.exists(proc_outdir) and not args.flag_recreate:
+	print("file %s has already existed." % proc_outdir)
+	print("............skipped.")
+	exit()
+
 if args.flag_recreate:
 	cmd = 'rm -rf %s' % proc_outdir
 	print(cmd);os.system(cmd)
