@@ -5,6 +5,8 @@ import sys
 import yaml 
 import glob 
 import argparse
+import numpy as np 
+import pandas as pd 
 import astropy.io.fits as pyfits 
 
 help_message = """
@@ -19,6 +21,8 @@ parser.add_argument('outdir', metavar='outdir',type=str,
 	help='output directory.') 
 parser.add_argument('fname_input_xcm', metavar='fname_input_xcm',type=str,
 	help='output directory.') 
+parser.add_argument('model_type', metavar='model_type',type=str,
+	help='model type (bb,pl).') 
 parser.add_argument('--fit_emin', metavar='fit_emin',type=float,        
 	help='fitting energy min',
 	default=0.4)
@@ -49,6 +53,7 @@ indir = args.indir
 obsid_base = args.obsid_base
 dir_main = args.outdir
 fname_input_xcm = args.fname_input_xcm
+model_type = args.model_type
 
 flag_execute = True
 
@@ -93,16 +98,17 @@ def bin_spec(src_pha,bgd_pha,
 	grp_pha = '%s/%s' % (os.path.dirname(src_pha),grp_pha)
 	return grp_pha
 
-def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
+def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,5],subtitle=None,
 	emin=0.2,emax=4.0,xmin=0.2,xmax=6,
-	ymin=3e-3,ymax=300,y2min=-15,y2max=15):
+	ymin=3e-3,ymax=300,y2min=-15,y2max=15,model_type='pl'):
+
 	hdu = pyfits.open(src_grp_pha)
-	date_obs = hdu[1].header['DATE-OBS']
-	obsid = hdu[1].header['OBS_ID']
+	date_obs   = hdu[1].header['DATE-OBS']
+	obsid      = hdu[1].header['OBS_ID']
 	objectname = hdu[1].header['OBJECT']
-	exposure = float(hdu[1].header['EXPOSURE'])
-	title = '%s %s %s (%.1f s)' % (objectname, obsid, date_obs, exposure)
-	subtitle += 'fit at %.1f-%.1f keV' % (emin,emax)
+	exposure   = float(hdu[1].header['EXPOSURE'])
+	title      = '%s %s %s (%.1f s)' % (objectname, obsid, date_obs, exposure)
+	subtitle += 'fit at %.1f-%.1f keV (%s)' % (emin,emax,model_xcm)
 
 	fname_fit_basename = '%s_fit' % (os.path.splitext(os.path.basename(src_grp_pha))[0])
 	fname_fit_log = '%s/%s_fit.log' % (dir_log,os.path.splitext(os.path.basename(src_grp_pha))[0])
@@ -115,25 +121,32 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	cmd += 'ignore 1:**-%0.2f %0.2f-**\n' % (emin,emax)
 	cmd += '@%s\n' % model_xcm
 	cmd += 'query yes\n'
-	cmd += 'newpa 5 0 -1\n'
-	cmd += 'freeze 4 5\n'	
-	cmd += 'fit\n'
-	cmd += 'freeze 1 2 3 \n'
-	cmd += 'thaw 4 5\n'
-	cmd += 'fit\n'
-	cmd += 'thaw 2 3 \n'
-	cmd += 'fit\n'
-	cmd += 'thaw 1 \n' 
-	cmd += 'fit\n'
-	#cmd += 'setplot add\n'
+	if model_type == 'bb':
+		cmd += 'newpa 5 0 -1\n'
+		cmd += 'freeze 4 5\n'	
+		cmd += 'fit\n'
+		cmd += 'freeze 1 2 3 \n'
+		cmd += 'thaw 4 5\n'
+		cmd += 'fit\n'
+		cmd += 'thaw 2 3 \n'
+		cmd += 'fit\n'
+		cmd += 'thaw 1 \n' 
+		cmd += 'fit\n'
+	elif model_type == 'pl':
+		cmd += 'fit\n'
+		#cmd += 'setplot add\n'
 	cmd += 'log %s\n' % fname_fit_log 
 	cmd += 'show rate\n'
 	cmd += 'show fit\n'
 	cmd += 'show pa\n'
+	cmd += 'freeze 1\n'
+	cmd += 'fit\n'
 	cmd += 'flux 1.0 10.0 err 100 68.3\n'
 	cmd += 'flux 2.0 10.0 err 100 68.3\n'
 	cmd += 'flux 0.2 1.0 err 100 68.3\n'	
 	cmd += 'flux 0.4 6.0 err 100 68.3\n'		
+	cmd += 'thaw 1\n'
+	cmd += 'fit \n'
 	for n_err in n_err_list:
 		cmd += 'err 1.0 %d\n' % n_err
 	cmd += 'log none\n'
@@ -171,6 +184,7 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	if flag_execute:
 		os.system(cmd)
 
+	"""
 	cmd  = 'echo "NO NO NO NO NO" >> %s.qdp;\n' % fname_fit_basename
 	cmd += 'echo "0.35 0.15 3.47e-01 0" >> %s.qdp;\n' % fname_fit_basename
 	cmd += 'echo "0.75 0.25 1.40e-01 0" >> %s.qdp;\n' % fname_fit_basename
@@ -179,12 +193,32 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3],subtitle=None,
 	cmd += 'echo "7.50 2.50 3.90e-02 0" >> %s.qdp;\n' % fname_fit_basename 
 	cmd += 'echo "12.50 2.50 2.51e-02 0" >> %s.qdp;\n' % fname_fit_basename
 	print(cmd);os.system(cmd)
+	"""
+
+	# 5-sigma and 3-sigma uncertainty 
+	cmd  = 'echo "NO NO NO NO NO" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "0.35 0.15 7.51e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "0.75 0.25 4.76e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "1.50 0.50 4.20e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "3.50 1.50 1.49e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "7.50 2.50 8.80e-02 0" >> %s.qdp;\n' % fname_fit_basename 
+	cmd += 'echo "12.50 2.50 4.86e-02 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "NO NO NO NO NO" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "0.35 0.15 4.17e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "0.75 0.25 2.81e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "1.50 0.50 2.53e-01 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "3.50 1.50 8.27e-02 0" >> %s.qdp;\n' % fname_fit_basename
+	cmd += 'echo "7.50 2.50 5.01e-02 0" >> %s.qdp;\n' % fname_fit_basename 
+	cmd += 'echo "12.50 2.50 2.83e-02 0" >> %s.qdp;\n' % fname_fit_basename	
+	print(cmd);os.system(cmd)
 
 	cmd  = 'qdp %s.qdp<<EOF\n' % fname_fit_basename
 	cmd += '/xw\n'
 	cmd += '@%s.pco\n' % fname_fit_basename
+	cmd += 'line step on 6\n' 
+	cmd += 'col 8 on 6\n'
 	cmd += 'line step on 5\n' 
-	cmd += 'col 8 on 5\n'
+	cmd += 'col 9 on 5\n'	
 	cmd += 'hard %s_lim.ps/cps\n' % fname_fit_basename
 	cmd += 'exit\n'
 	print(cmd);os.system(cmd)
@@ -275,6 +309,22 @@ def get_parameter(logfile,npar):
 
 	return value, err_min, err_max
 
+def get_MJD_UTC(date_utc):
+	cmd  = 'rm -f tmp.log;'
+	cmd += 'nitimeconv.py %s ' % date_utc
+	cmd += '-f isot -s utc > tmp.log'
+	print(cmd);os.system(cmd)
+
+	for line in open('tmp.log'):
+		cols = line.split()
+		if len(cols) <= 1:
+			continue 
+		if cols[0] == 'MJD_UTC':
+			mjd_utc = float(cols[2])
+			break 
+	cmd = 'rm -f tmp.log;'
+	return mjd_utc
+
 # ========================
 # copy files 
 # ========================
@@ -299,7 +349,138 @@ for obsid_path in glob.glob('%s/%s*' % (indir,obsid_base)):
 		if flag_execute:
 			os.system(cmd)
 
+# ========================
+# make fit 
+# ========================
+i = 0 
+row_list = []
+for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
+	hdu = pyfits.open(src_pha)
 
+	date_obs = hdu[1].header['DATE-OBS']
+	obsid    = hdu[1].header['OBS_ID']
+	exposure = float(hdu[1].header['EXPOSURE'])
+	bgd_pha  = glob.glob('%s/ni%s_*_BGMod_3C50.pha' % (dir_pha,obsid))[0]
+
+	mjd_utc = get_MJD_UTC(date_obs)
+
+	src_grp_pha = bin_spec(src_pha,bgd_pha,
+		min_significance=args.min_significance,max_bins=args.max_bins)
+	fname_fit_log = fit_spec(src_grp_pha,bgd_pha,fname_input_xcm,
+		emin=args.fit_emin, emax=args.fit_emax, 
+		subtitle=args.subtitle,ymin=args.plot_ymin,ymax=args.plot_ymax,
+		xmin=args.plot_xmin,xmax=args.plot_xmax,model_type=model_type)
+
+	rate, rate_err = get_rate(fname_fit_log)
+	rchi2, chi2, dof, prov = get_chisqure(fname_fit_log)
+
+	if rchi2 < RCHI2_THRESHOLD: 
+		f1to10, f1to10_err_min, f1to10_err_max = get_flux(fname_fit_log,1.0,10.0)
+		f2to10, f2to10_err_min, f2to10_err_max = get_flux(fname_fit_log,2.0,10.0)	
+		f0p2to1, f0p2to1_err_min, f0p2to1_err_max = get_flux(fname_fit_log,0.2,1.0)
+		f0p4to6, f0p4to6_err_min, f0p4to6_err_max = get_flux(fname_fit_log,0.4,6.0)	
+		if model_type == 'bb':
+			nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
+			kT1, kT1_err_min, kT1_err_max = get_parameter(fname_fit_log,2)
+			norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,3)
+		if model_type == 'pl':
+			nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
+			gamma, gamma_err_min, gamma_err_max = get_parameter(fname_fit_log,2)
+			norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,5)			
+	else:
+		f1to10, f1to10_err_min, f1to10_err_max = np.nan, np.nan, np.nan
+		f2to10, f2to10_err_min, f2to10_err_max = np.nan, np.nan, np.nan
+		f0p2to1, f0p2to1_err_min, f0p2to1_err_max = np.nan, np.nan, np.nan
+		f0p4to6, f0p4to6_err_min, f0p4to6_err_max = np.nan, np.nan, np.nan
+		if model_type == 'bb':
+			nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
+			kT1, kT1_err_min, kT1_err_max = np.nan, np.nan, np.nan
+			norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan
+		if model_type == 'pl':
+			nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
+			gamma, gamma_err_min, gamma_err_max = np.nan, np.nan, np.nan
+			norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan
+
+	if model_type == 'pl':
+		row_list.append([
+			date_obs,
+			mjd_utc,
+			obsid,
+			exposure,
+			rate,
+			rate_err,
+			args.fit_emin,
+			args.fit_emax,
+			rchi2,
+			chi2,
+			dof,
+			prov,
+			f1to10, f1to10_err_min, f1to10_err_max,
+			f2to10, f2to10_err_min, f2to10_err_max,
+			f0p2to1, f0p2to1_err_min, f0p2to1_err_max,
+			f0p4to6, f0p4to6_err_min, f0p4to6_err_max,
+			nh, nh_err_min, nh_err_max,
+			gamma, gamma_err_min, gamma_err_max,
+			norm1, norm1_err_min, norm1_err_max, 
+			src_pha,
+			bgd_pha
+			])
+	else:
+		row_list.append([
+			date_obs,
+			mjd_utc, 
+			obsid,
+			exposure,
+			rate,
+			rate_err,
+			args.fit_emin,
+			args.fit_emax,
+			rchi2,
+			chi2,
+			dof,
+			prov,
+			f1to10, f1to10_err_min, f1to10_err_max,
+			f2to10, f2to10_err_min, f2to10_err_max,
+			f0p2to1, f0p2to1_err_min, f0p2to1_err_max,
+			f0p4to6, f0p4to6_err_min, f0p4to6_err_max,
+			src_pha,
+			bgd_pha
+			])		
+
+	i += 1 
+	#if i > 3:
+	#	break
+
+print(row_list)
+
+fname_main_log = '%s/%s_fit.csv' % (dir_main,args.outdir)
+df = pd.DataFrame(row_list,
+	columns=[
+	'DATE-OBS',
+	'MJD_UTC',
+	'OBS_ID',
+	'EXPOSURE(s)',
+	'rate',
+	'rate_err',
+	'fit_emin',
+	'fit_emax',
+	'rchi2',
+	'chi2',
+	'dof',
+	'prov',
+	'f1to10', 'f1to10_err_min', 'f1to10_err_max',
+	'f2to10', 'f2to10_err_min', 'f2to10_err_max',
+	'f0p2to1', 'f0p2to1_err_min', 'f0p2to1_err_max',
+	'f0p4to6', 'f0p4to6_err_min', 'f0p4to6_err_max',
+	'nh', 'nh_err_min', 'nh_err_max',
+	'gamma', 'gamma_err_min', 'gamma_err_max',
+	'norm1', 'norm1_err_min', 'norm1_err_max', 	
+	'src_pha',
+	'bgd_pha'
+	])		
+df.to_csv(fname_main_log)
+
+"""
 # ========================
 # make fit 
 # ========================
@@ -433,7 +614,7 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 	norm1_err_max = NULL_VALUE
 
 f_main_log.close()
-
+"""
 
 
 
