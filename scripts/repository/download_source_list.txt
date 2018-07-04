@@ -1,63 +1,87 @@
-NGC_300_ULX1
-# ASASSN-18el
-# IGR_J17379-3747
+# =============== Calibration  ==================
+# BKGD_RXTE_1 # done 18-06-15
+# BKGD_RXTE_2 # done 18-06-15
+# BKGD_RXTE_3 # done 18-06-15
+# BKGD_RXTE_4 # done 18-06-15
+# BKGD_RXTE_5 # done 18-06-15
+# BKGD_RXTE_6 # done 18-06-15
+# BKGD_RXTE_8 # done 18-06-15
 # 
-# BKGD_RXTE_1
-# BKGD_RXTE_2
-# BKGD_RXTE_3
-# BKGD_RXTE_4
-# BKGD_RXTE_5
-# BKGD_RXTE_6
-# BKGD_RXTE_8
+# =============== Long-term Monitoring ==================
 # 
-# Proxima_Cen
+# Proxima_Cen # done 18-06-29
+# SGR_0501+4516 # done 18-06-29
+# 
+# 
+# =============== Source of Interest  ==================
+# 
+# Sco_X-1 # DONE 2018-06-29
 #
-# 3C_273
-# U_Cep
+# NGC_300_ULX1 # done 18-06-29
+# ASASSN-18el # done 18-06-15
+# IGR_J17379-3747 # done 18-07-04 (Craig's source) 
 # 
-# PSR_B1509-58
-# 4U_0142+61
-# PSR_B0540-69
-# PSR_J0205+6449
-# PSR_B0355+54
-# SGR_0418+5729
-# SGR_0501+4516
-# RX_J0720.4-3125
-# PSR_J0726-2612
-# PSR_B0833-45
-# 1E_1048.1-5937
-# PSR_J1119-6127
-# 1E_1207.4-5209
-# RX_J1308.8+2127
-# PSR_J1412+7922
-# PSR_J1622-4950
-# CXO_J164710.2-455216
-# XTE_J1810-197
-# AX_J1818.8-1559
-# Swift_J1822.3-1606
+# 
+# 
+# AT2018cow # done 18-07-04 
+# 
+# 3C_273 # 10101001ss done 18-07-03
+# U_Cep # done 18-06-26 
+# 
+# =============== Magnetars ==================
+# ==== Gugus ====
+# AX_J1818.8-1559 # done 18-07-03
+# 1E_2259+586 # Done 2018-06-29 
+# PSR_J1119-6127 # done 18-07-03 
+# 4U_0142+61 # done 18-07-03 
+# XTE_J1810-197 # done 18-07-03 
+#  
+# SGR_1935+2154
+# PSR_B1509-58 # done 18-06-15
+# PSR_B0540-69 # done 18-07-03 
+# PSR_J0205+6449 # done 18-07-03 
+# PSR_B0355+54 # done 18-07-03 
+# SGR_0418+5729 # done 18-07-03 
+# PSR_J0726-2612 # done 18-07-03 
+# PSR_B0833-45 # done 18-07-03 
+# 1E_1048.1-5937 # done 18-07-03 
+# 1E_1207.4-5209 # done 18-07-03 
+# PSR_J1412+7922 # done 18-07-03 
+# PSR_J1622-4950 # done 18-07-03 
+# CXO_J164710.2-455216 # done 18-07-03 
+# Swift_J1822.3-1606 # done 18-07-03 
+# RX_J1605.3+3249 # done  18-06-29
+#
+# 
+# =============== Light Curve Modeling ==================
+# 
+#
+# =============== XDINSs ==================
 # RX_J1856.4-3754
-# 1E_2259+586
+# 2XMM_J104608.7-594306
+# RX_J1308.8+2127
+# RX_J0720.4-3125 # Done 2018-06-29
+# 
 # LSI_+61_303
 # PSR_B1259-63
 # PSR_B1957+20
 #
-# PSR_B0531+21
-# PSR_B0531_off_1p47amin
+# PSR_B0531+21 # DONE 2018-06-26
+# PSR_B0531_off_1p47amin # DONE 2018-06-26
+# PSR_J0537-6910 # Big-Glitcher done 2018-07-04
 # 
-# PSR_J0537-6910
 # PSR_B0633+17
 # PSR_B0656+14
 #
-# NGC_300_ULX1_bkg
+NGC_300_ULX1_bkg
 # 
-# 1E_0102.2-7219
-# Cas_A
+# 1E_0102.2-7219 # DONE 2018-06-26 
+# Cas_A # DONE 2018-07-04
 # W49B
 # N132D
 #
 # ASASSN-18fv
 # 
-# Sco_X-1
 # Vela_X-1
 # GRO_J1008-57
 # Cyg_X-2
@@ -71,3 +95,6 @@ NGC_300_ULX1
 # NGC_4993
 # 
 # MAXI_J1820+070
+#
+# === Light Curve Modeling ===
+# PSR_J0437-4715_opt1
