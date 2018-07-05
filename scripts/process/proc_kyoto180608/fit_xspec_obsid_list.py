@@ -59,6 +59,7 @@ flag_execute = True
 
 NULL_VALUE = -999
 RCHI2_THRESHOLD = 4.0
+PLOT_DEVICE = "/NULL"
 
 # ========================
 # functions
@@ -98,9 +99,11 @@ def bin_spec(src_pha,bgd_pha,
 	grp_pha = '%s/%s' % (os.path.dirname(src_pha),grp_pha)
 	return grp_pha
 
-def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,5],subtitle=None,
-	emin=0.2,emax=4.0,xmin=0.2,xmax=6,
-	ymin=3e-3,ymax=300,y2min=-15,y2max=15,model_type='pl'):
+def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,3,5],subtitle=None,
+	emin=0.28,emax=2.0,xmin=0.2,xmax=6,
+	ymin=3e-3,ymax=300,y2min=-15,y2max=15,model_type='apec'):
+	# model_type : bb, pl, apec
+	# apec: [1,2,5]
 
 	hdu = pyfits.open(src_grp_pha)
 	date_obs   = hdu[1].header['DATE-OBS']
@@ -115,6 +118,7 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,5],subtitle=None,
 	fname_fit_xcm = fname_fit_log.replace('.log','.xcm')
 	fname_fit_ps = fname_fit_log.replace('.log','.ps')
 	cmd  = 'xspec <<EOF\n'
+	#cmd += 'cpd %s\n' % PLOT_DEVICE 
 	cmd += 'data 1 %s\n' % src_grp_pha
 	cmd += 'back 1 %s\n' % bgd_pha
 	cmd += 'setplot energy\n'
@@ -135,6 +139,8 @@ def fit_spec(src_grp_pha,bgd_pha,model_xcm,n_err_list=[1,2,5],subtitle=None,
 	elif model_type == 'pl':
 		cmd += 'fit\n'
 		#cmd += 'setplot add\n'
+	elif model_type == 'apec':
+		cmd += 'fit\n'		
 	cmd += 'log %s\n' % fname_fit_log 
 	cmd += 'show rate\n'
 	cmd += 'show fit\n'
@@ -370,28 +376,53 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 
 	src_grp_pha = bin_spec(src_pha,bgd_pha,
 		min_significance=args.min_significance,max_bins=args.max_bins)
+
 	fname_fit_log = fit_spec(src_grp_pha,bgd_pha,fname_input_xcm,
 		emin=args.fit_emin, emax=args.fit_emax, 
 		subtitle=args.subtitle,ymin=args.plot_ymin,ymax=args.plot_ymax,
 		xmin=args.plot_xmin,xmax=args.plot_xmax,model_type=model_type)
 
-	rate, rate_err = get_rate(fname_fit_log)
-	rchi2, chi2, dof, prov = get_chisqure(fname_fit_log)
+	try:
+		rate, rate_err = get_rate(fname_fit_log)
+		rchi2, chi2, dof, prov = get_chisqure(fname_fit_log)
 
-	if rchi2 < RCHI2_THRESHOLD: 
-		f1to10, f1to10_err_min, f1to10_err_max = get_flux(fname_fit_log,1.0,10.0)
-		f2to10, f2to10_err_min, f2to10_err_max = get_flux(fname_fit_log,2.0,10.0)	
-		f0p2to1, f0p2to1_err_min, f0p2to1_err_max = get_flux(fname_fit_log,0.2,1.0)
-		f0p4to6, f0p4to6_err_min, f0p4to6_err_max = get_flux(fname_fit_log,0.4,6.0)	
-		if model_type == 'bb':
-			nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
-			kT1, kT1_err_min, kT1_err_max = get_parameter(fname_fit_log,2)
-			norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,3)
-		if model_type == 'pl':
-			nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
-			gamma, gamma_err_min, gamma_err_max = get_parameter(fname_fit_log,2)
-			norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,5)			
-	else:
+		if rchi2 < RCHI2_THRESHOLD: 
+			f1to10, f1to10_err_min, f1to10_err_max = get_flux(fname_fit_log,1.0,10.0)
+			f2to10, f2to10_err_min, f2to10_err_max = get_flux(fname_fit_log,2.0,10.0)	
+			f0p2to1, f0p2to1_err_min, f0p2to1_err_max = get_flux(fname_fit_log,0.2,1.0)
+			f0p4to6, f0p4to6_err_min, f0p4to6_err_max = get_flux(fname_fit_log,0.4,6.0)	
+			if model_type == 'bb':
+				nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
+				kT1, kT1_err_min, kT1_err_max = get_parameter(fname_fit_log,2)
+				norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,3)
+			if model_type == 'pl':
+				nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
+				gamma, gamma_err_min, gamma_err_max = get_parameter(fname_fit_log,2)
+				norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,5)		
+			if model_type == 'apec':	
+				nh, nh_err_min, nh_err_max = get_parameter(fname_fit_log,1)
+				kT1, kT1_err_min, kT1_err_max = get_parameter(fname_fit_log,2)
+				norm1, norm1_err_min, norm1_err_max = get_parameter(fname_fit_log,5)					
+		else:
+			f1to10, f1to10_err_min, f1to10_err_max = np.nan, np.nan, np.nan
+			f2to10, f2to10_err_min, f2to10_err_max = np.nan, np.nan, np.nan
+			f0p2to1, f0p2to1_err_min, f0p2to1_err_max = np.nan, np.nan, np.nan
+			f0p4to6, f0p4to6_err_min, f0p4to6_err_max = np.nan, np.nan, np.nan
+			if model_type == 'bb':
+				nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
+				kT1, kT1_err_min, kT1_err_max = np.nan, np.nan, np.nan
+				norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan
+			if model_type == 'pl':
+				nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
+				gamma, gamma_err_min, gamma_err_max = np.nan, np.nan, np.nan
+				norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan
+			if model_type == 'apec':	
+				nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
+				kT1, kT1_err_min, kT1_err_max = np.nan, np.nan, np.nan
+				norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan
+	except:
+		rate, rate_err =  np.nan, np.nan
+		rchi2, chi2, dof, prov = np.nan, np.nan, np.nan, np.nan
 		f1to10, f1to10_err_min, f1to10_err_max = np.nan, np.nan, np.nan
 		f2to10, f2to10_err_min, f2to10_err_max = np.nan, np.nan, np.nan
 		f0p2to1, f0p2to1_err_min, f0p2to1_err_max = np.nan, np.nan, np.nan
@@ -404,8 +435,39 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 			nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
 			gamma, gamma_err_min, gamma_err_max = np.nan, np.nan, np.nan
 			norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan
+		if model_type == 'apec':	
+			nh, nh_err_min, nh_err_max = np.nan, np.nan, np.nan
+			kT1, kT1_err_min, kT1_err_max = np.nan, np.nan, np.nan
+			norm1, norm1_err_min, norm1_err_max = np.nan, np.nan, np.nan		
 
-	if model_type == 'pl':
+	if model_type == 'apec':
+		row_list.append([
+			date_obs,
+			mjd_utc_start,
+			mjd_utc_stop,
+			mjd_utc_center,	
+			mjd_utc_width,				
+			obsid,
+			exposure,
+			rate,
+			rate_err,
+			args.fit_emin,
+			args.fit_emax,
+			rchi2,
+			chi2,
+			dof,
+			prov,
+			f1to10, f1to10_err_min, f1to10_err_max,
+			f2to10, f2to10_err_min, f2to10_err_max,
+			f0p2to1, f0p2to1_err_min, f0p2to1_err_max,
+			f0p4to6, f0p4to6_err_min, f0p4to6_err_max,
+			nh, nh_err_min, nh_err_max,
+			kT1, kT1_err_min, kT1_err_max,
+			norm1, norm1_err_min, norm1_err_max, 
+			src_pha,
+			bgd_pha
+			])		
+	elif model_type == 'pl':
 		row_list.append([
 			date_obs,
 			mjd_utc_start,
@@ -464,33 +526,62 @@ for src_pha in glob.glob('%s/*gtisel.pha' % dir_pha):
 print(row_list)
 
 fname_main_log = '%s/%s_fit.csv' % (dir_main,args.outdir)
-df = pd.DataFrame(row_list,
-	columns=[
-	'DATE-OBS',
-	'MJD_UTC_START',
-	'MJD_UTC_STOP',	
-	'MJD_UTC_CENTER',		
-	'MJD_UTC_WIDTH',			
-	'OBS_ID',
-	'EXPOSURE(s)',
-	'rate',
-	'rate_err',
-	'fit_emin',
-	'fit_emax',
-	'rchi2',
-	'chi2',
-	'dof',
-	'prov',
-	'f1to10', 'f1to10_err_min', 'f1to10_err_max',
-	'f2to10', 'f2to10_err_min', 'f2to10_err_max',
-	'f0p2to1', 'f0p2to1_err_min', 'f0p2to1_err_max',
-	'f0p4to6', 'f0p4to6_err_min', 'f0p4to6_err_max',
-	'nh', 'nh_err_min', 'nh_err_max',
-	'gamma', 'gamma_err_min', 'gamma_err_max',
-	'norm1', 'norm1_err_min', 'norm1_err_max', 	
-	'src_pha',
-	'bgd_pha'
-	])		
+if model_type == 'apec':
+	df = pd.DataFrame(row_list,
+		columns=[
+		'DATE-OBS',
+		'MJD_UTC_START',
+		'MJD_UTC_STOP',	
+		'MJD_UTC_CENTER',		
+		'MJD_UTC_WIDTH',			
+		'OBS_ID',
+		'EXPOSURE(s)',
+		'rate',
+		'rate_err',
+		'fit_emin',
+		'fit_emax',
+		'rchi2',
+		'chi2',
+		'dof',
+		'prov',
+		'f1to10', 'f1to10_err_min', 'f1to10_err_max',
+		'f2to10', 'f2to10_err_min', 'f2to10_err_max',
+		'f0p2to1', 'f0p2to1_err_min', 'f0p2to1_err_max',
+		'f0p4to6', 'f0p4to6_err_min', 'f0p4to6_err_max',
+		'nh', 'nh_err_min', 'nh_err_max',
+		'kT1', 'kT1_err_min', 'kT1_err_max',
+		'norm1', 'norm1_err_min', 'norm1_err_max', 	
+		'src_pha',
+		'bgd_pha'
+		])		
+elif model_type == 'pl':
+	df = pd.DataFrame(row_list,
+		columns=[
+		'DATE-OBS',
+		'MJD_UTC_START',
+		'MJD_UTC_STOP',	
+		'MJD_UTC_CENTER',		
+		'MJD_UTC_WIDTH',			
+		'OBS_ID',
+		'EXPOSURE(s)',
+		'rate',
+		'rate_err',
+		'fit_emin',
+		'fit_emax',
+		'rchi2',
+		'chi2',
+		'dof',
+		'prov',
+		'f1to10', 'f1to10_err_min', 'f1to10_err_max',
+		'f2to10', 'f2to10_err_min', 'f2to10_err_max',
+		'f0p2to1', 'f0p2to1_err_min', 'f0p2to1_err_max',
+		'f0p4to6', 'f0p4to6_err_min', 'f0p4to6_err_max',
+		'nh', 'nh_err_min', 'nh_err_max',
+		'gamma', 'gamma_err_min', 'gamma_err_max',
+		'norm1', 'norm1_err_min', 'norm1_err_max', 	
+		'src_pha',
+		'bgd_pha'
+		])		
 df.to_csv(fname_main_log)
 
 """
