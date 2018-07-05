@@ -56,7 +56,7 @@ for i in range(num_of_ycol):
 			xerr_min = (df[param['xerror'][0]].values)
 			xerr_max = (df[param['xerror'][1]].values)			
 			axes[i].errorbar(x[mask],y[mask],xerr=[xerr_min[mask],xerr_max[mask]],
-				"o",markersize=param['markersize'],markerfacecolor="r",markeredgecolor="k")				
+				fmt="o",markersize=param['markersize'],markerfacecolor="r",markeredgecolor="k")				
 	else:
 		yerr_min = (df[param['yerrors'][i][0]].values)/float(param['ynorms'][i])
 		yerr_max = (df[param['yerrors'][i][0]].values)/float(param['ynorms'][i])
