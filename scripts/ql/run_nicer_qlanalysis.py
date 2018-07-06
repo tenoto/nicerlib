@@ -6,6 +6,7 @@ import glob
 import yaml 
 import argparse
 import subprocess
+import pandas as pd 
 import astropy.io.fits as pyfits 
 
 # Conversion from PI to keV (PI is in units of 10 eV)
@@ -148,6 +149,7 @@ class NicerQLData():
 			print(gti)
 
 	def devide_to_gti(self):
+		self.csv_data_list = []
 		for gtinum in range(len(self.corrected_gti_list)):		
 			tstart = self.corrected_gti_list[gtinum][0]
 			tstop = self.corrected_gti_list[gtinum][1]
@@ -170,15 +172,13 @@ class NicerQLData():
 			cmd += '-a %s ' % self.param['arffile']
 			print(cmd);os.system(cmd)
 
-#			bin_spec(src_pha,
-#	min_significance=5,max_bins=120,
-#	emin=0.2,emax=15.0)
+			bgdpha = ""
+			data_id = "gti%d" % gtinum
+			self.csv_data_list.append([data_id, outpha,bgdpha,self.param['rmffile'],self.param['arffile']])
 
-			#outflc = '%s/%s_gti%d.flc' % (subdir,options.outputbase,gtinum)
-			#cmd  = 'fxselect_extract_curve.py -i %s -o %s ' % (outevt, outflc)
-			#cmd += '-t %.3f -d %.2f -u %.2f'  % (options.tbin, options.emin, options.emax)
-			#print(cmd);os.system(cmd)				
-			
+		self.fcsvfile = '%s/%s_gti.csv' % (self.param['outdir'],self.qlobsid)
+		df = pd.DataFrame(self.csv_data_list,columns=['data_id','src_pha','bgd_pha','rmffile','arffile'])
+		df.to_csv(self.fcsvfile)
 		
 	def run(self):
 		self.check_files()
