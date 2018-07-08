@@ -83,5 +83,6 @@ for i in range(num_of_ycol):
 	axes[i].set_ylabel(param['ylabels'][i])
 	axes[i].set_autoscaley_on(False)
 	axes[i].set_ylim(param['yranges'][i])
+	axes[i].set_yscale(param['yscale'][i])
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.savefig(param['outpdf'])
