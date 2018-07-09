@@ -35,6 +35,7 @@ export PATH=$NICER_SOFT_PATH/scripts/process/proc_kyoto180608:$PATH
 export PATH=$NICER_SOFT_PATH/scripts/speccorr:$PATH
 export PATH=$NICER_SOFT_PATH/scripts/misc:$PATH
 export PATH=$NICER_SOFT_PATH/scripts/ql:$PATH
+export PATH=$NICER_SOFT_PATH/scripts/xspec:$PATH
 
 echo ComputerName    = $NAME
 echo NICER_DATA_PATH = $NICER_DATA_PATH
