@@ -9,7 +9,12 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 
 import matplotlib as mpl
-mpl.rcParams['font.family'] = 'Times New Roman'
+try:
+	mpl.rcParams['font.family'] = 'Helvetica'	
+	print('font.family=Helvetica')
+except:
+	mpl.rcParams['font.family'] = 'Times New Roman'
+	print('font.family=Times New Roman')	
 mpl.rcParams['font.size'] = '12'
 mpl.rcParams['mathtext.default'] = 'regular'
 mpl.rcParams['xtick.top'] = 'True'
@@ -45,7 +50,10 @@ num_of_ycol = len(param['ycolumns'])
 
 fig, axes = plt.subplots(num_of_ycol,1,sharex=True,sharey=False,
 	figsize=(param['panel_size'][0],param['panel_size'][1]*num_of_ycol))
-mask = (param['rchi2range'][0] < df['rchi2']) & (df['rchi2'] < param['rchi2range'][1]) 
+if param.has_key('rchi2range'):
+	mask = (param['rchi2range'][0] < df['rchi2']) & (df['rchi2'] < param['rchi2range'][1]) 
+else:
+	mask = [True for i in range(len(df[param['xcolumn']]))]
 for i in range(num_of_ycol):
 	x = df[param['xcolumn']].values - param['xoffset']
 	y = (df[param['ycolumns'][i]].values)/float(param['ynorms'][i])
@@ -83,6 +91,6 @@ for i in range(num_of_ycol):
 	axes[i].set_ylabel(param['ylabels'][i])
 	axes[i].set_autoscaley_on(False)
 	axes[i].set_ylim(param['yranges'][i])
-	axes[i].set_yscale(param['yscale'][i])
+	axes[i].set_yscale(param['yscales'][i])
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.savefig(param['outpdf'])
