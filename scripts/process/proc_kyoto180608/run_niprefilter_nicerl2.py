@@ -2,8 +2,8 @@
 
 __name__    = 'run_niprefilter_nicerl2'
 __author__  = 'Teru Enoto'
-__version__ = 'proc_kyoto180608'
-__date__    = '2018 June 8'
+__version__ = '1.00'
+__date__    = '2018 July 11'
 
 """
 run following commands (similar to nicerl2)
@@ -25,18 +25,17 @@ import astropy.io.fits as pyfits
 help_message = """
 (example) %s obsid_path.lst 
 """ % sys.argv[0]
-
 parser = argparse.ArgumentParser(description=help_message)
 parser.add_argument('--indir', metavar='indir',type=str,        
 	help='Input directory name. The directory should be a single NICER observation directory, which in turn contains xti/{events_uf,events_cl,hk,auxil} subdirectories.')
 parser.add_argument('--fparam', metavar='fparam',type=str,        
-	help='yaml file for input parameters.')
-#parser.add_argument("-r", "--recreate",action="store_true",
-#	dest="flag_recreate", default=False,
-#	help='recreate flag.')
+	help='yaml file for pipeline process input parameters.')
 args = parser.parse_args()
 print(args)
 
+if not os.path.exists(args.indir):
+	sys.stderr.write('error: directory %s does not exist.' % args.indir)
+	quit()
 if not os.path.exists(args.fparam):
 	sys.stderr.write('error: file %s does not exist.' % args.fparam)
 	quit()
@@ -55,6 +54,8 @@ dir_log  = '%s/log' % dir_proc
 cmd = 'mkdir -p %s' % dir_log
 print(cmd);os.system(cmd)
 
+cmd = 'cp %s %s/log' % (args.fparam,dir_log)
+print(cmd);os.system(cmd)
 
 # ==============================
 # 1. niprefilter2 - create augmented NICER-specific filter file
