@@ -11,6 +11,6 @@ d_kpc = float(sys.argv[2])
 luminosity = 1.2e+32 * (flux / 1e-12) * d_kpc**2 
 
 dump  = "flux: %.3e (erg/s/cm2)\n" % flux
-dump += "distance : %.3f (kpc)\n" % d_kpc
+dump += "distance : %.3e (kpc)\n" % d_kpc
 dump += "luminosity: %.3e (erg/s)" % luminosity
 print(dump)
