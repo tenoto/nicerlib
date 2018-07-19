@@ -8,16 +8,16 @@
 # BKGD_RXTE_8 # done 18-06-15
 # 
 # =============== Long-term Monitoring ==================
-Proxima_Cen # 11110101ss done 18-06-29
-SGR_0501+4516 # done 18-06-29
+# Proxima_Cen # 11110101ss DONE 2018-07-18
+# SGR_0501+4516 # DONE 2018-07-18
 # 
 # 
 # =============== Source of Interest  ==================
 # 
-Sco_X-1 # DONE 2018-06-29
+# Sco_X-1 # DONE 2018-07-18
 #
 # NGC_300_ULX1 # done 18-06-29
-ASASSN-18el # done 18-06-15
+# ASASSN-18el # DONE 2018-07-18
 # IGR_J17379-3747 # done 18-07-04 (Craig's source) 
 # 
 # 
@@ -38,28 +38,40 @@ ASASSN-18el # done 18-06-15
 # SGR_1935+2154
 # PSR_B1509-58 # done 18-06-15
 # PSR_B0540-69 # done 18-07-03 
-# PSR_J0205+6449 # done 18-07-03 
-# PSR_B0355+54 # done 18-07-03 
+
 # SGR_0418+5729 # done 18-07-03 
-# PSR_J0726-2612 # done 18-07-03 
 # PSR_B0833-45 # done 18-07-03 
 # 1E_1048.1-5937 # done 18-07-03 
 # 1E_1207.4-5209 # done 18-07-03 
-# PSR_J1412+7922 # done 18-07-03 
 # PSR_J1622-4950 # done 18-07-18
 # CXO_J164710.2-455216 # done 18-07-03 
 # Swift_J1822.3-1606 # done 18-07-03 
 # RX_J1605.3+3249 # done  18-06-29
 #
+# =============== LIGO sources ==================
+PSR_J0205+6449
+PSR_J1412+7922
+PSR_J1849-0001
+PSR_J2229+6114
+PSR_J0537-6910 # Big-Glitcher done 2018-07-04 ==> v180705
+# 
+# =============== Kuiper Monitoring ==================
+PSR_J1838-0655 # 10206801ss
+PSR_J1849-0001 # 10206601ss
+PSR_J1846-0258 # 10332901ss
+#
+# =============== Watanabe Eri ==================
+PSR_J0726-2612 # 10201501ss done 18-07-03 
+# 
 # 
 # =============== Light Curve Modeling ==================
 # 
 #
 # =============== XDINSs ==================
-# RX_J1856.4-3754
-# 2XMM_J104608.7-594306
-# RX_J1308.8+2127
-# RX_J0720.4-3125 # Done 2018-06-29
+RX_J1856.4-3754
+2XMM_J104608.7-594306
+RX_J1308.8+2127
+RX_J0720.4-3125 # Done 2018-06-29
 # 
 # LSI_+61_303
 # PSR_B1259-63
@@ -67,7 +79,6 @@ ASASSN-18el # done 18-06-15
 #
 # PSR_B0531+21 # DONE 2018-06-26
 # PSR_B0531_off_1p47amin # DONE 2018-06-26
-# PSR_J0537-6910 # Big-Glitcher done 2018-07-04 ==> v180705
 # 
 # PSR_B0633+17
 # PSR_B0656+14 # Wynn 
@@ -90,6 +101,9 @@ ASASSN-18el # done 18-06-15
 # TT_Ari
 # EV_Lac
 # Ark_564
+# Algol
+# Rapid_Burster
+# GT_Mus
 #
 # NGC_4993
 #
@@ -100,3 +114,8 @@ ASASSN-18el # done 18-06-15
 # PSR_J2215+5135 # Alice done 2018-07-10
 # PSR_B1937+21 # Zaven's interest 
 # PSR_B1821-24 # Zaven's interest 
+# 
+# LMC_X-3
+# Cir_X-1
+# Cen_X-3
+# Sgr_A_star
