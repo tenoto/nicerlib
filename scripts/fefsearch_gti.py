@@ -6,9 +6,14 @@ __version__ = '1.00'
 __date__    = '2018 March 20'
 
 import os
-import pyfits
+#import pyfits
+import astropy.io.fits as pyfits
 from optparse import OptionParser
 from datetime import datetime 
+
+import numpy as np
+import matplotlib.pylab as plt 
+from scipy.optimize import curve_fit
 
 parser = OptionParser()
 parser.add_option("-i","--inputfits",dest="inputfits",
@@ -29,6 +34,10 @@ parser.add_option("-t","--threshold",dest="threshold",default=20,
 	action="store",help="threshold cycle number",type="int")
 parser.add_option("-f","--flagcleanup",dest="flagcleanup",default=True,
 	action="store_false",help="flag clean up")
+parser.add_option("--sigma_initial",dest="sigma_initial",default=0.001,
+	action="store",help="chi-square fit sigma initial value (default 0.001)",type="float")
+parser.add_option("--fit_range_width",dest="fit_range_width",default=0.008,
+	action="store",help="chi-square fit range (default 0.008)",type="float")
 (options, args) = parser.parse_args()
 
 if options.inputfits == None:
@@ -68,7 +77,7 @@ if os.path.exists(options.outputfits):
 	quit()
 
 threshold_exposure = options.dper * float(options.threshold)
-outdir = 'tmpout_%s' % os.path.splitext(options.outputfits)[0]
+outdir = 'tmpout_%s' % os.path.splitext(os.path.basename(options.outputfits))[0]
 cmd = 'rm -fr %s; mkdir -p %s' % (outdir,outdir)
 os.system(cmd)
 
@@ -88,12 +97,13 @@ for i in range(len(hdu['GTI'].data)):
 	used_gti_exp.append(gtiexp)
 
 	basename = os.path.splitext(os.path.basename(options.inputfits))[0]
-	fout_evt = '%s/%s_%d.evt' % (outdir,basename,i)
+	fout_evt = '%s/%s_%04d.evt' % (outdir,basename,i)
 	cmd  = 'fselect %s %s ' % (options.inputfits,fout_evt)
 	cmd += 'expr="(TIME>=%.7f).AND.(TIME<%.7f)"' % (tstart,tstop)
 	print(cmd); os.system(cmd)
 
-	fout_efs = fout_evt.replace('.evt','.efs')
+	#fout_efs = fout_evt.replace('.evt','.efs')
+	fout_efs = '%s.efs' % os.path.splitext(fout_evt)[0]
 	cmd  = 'efsearch %s window="-" ' % fout_evt
 	cmd += 'epochfo=1 sepoch=INDEF dper=%.7f nphase=%d nbint=INDEF ' % (options.dper,options.nphase)
 	cmd += 'dres=%.7f nper=%d ' % (options.dres,options.nper)
@@ -154,9 +164,65 @@ cmd  = 'fplot %s ' % options.outputfits
 cmd += 'PERIOD CHISQRDAVE - /xw @ <<EOF\n'
 cmd += 'time off\n'
 cmd += 'lwid 5\n'
-cmd += 'la f Max period = %.3f (chi2=%.3f)\n' % (CHISQRDAVE_max_period,CHISQRDAVE_max_value)
+cmd += 'la f Max period = %.8f (chi2=%.3f)\n' % (CHISQRDAVE_max_period,CHISQRDAVE_max_value)
 cmd += 'plot\n'
 cmd += 'hard %s/cps\n' % fout_ps
 cmd += 'exit\n'
 cmd += 'EOF\n'
 print(cmd); os.system(cmd)	
+
+cmd = 'ps2pdf %s' % fout_ps
+print(cmd); os.system(cmd)	
+cmd = 'rm -f %s' % fout_ps
+print(cmd); os.system(cmd)	
+
+if options.flagcleanup:
+	cmd = 'rm -rf %s' % outdir
+	print(cmd); os.system(cmd)		
+
+# ========================
+# Fit peak 
+# ========================
+
+hdu = pyfits.open(options.outputfits)
+
+peak_initial  = CHISQRDAVE_max_period
+sigma_initial = options.sigma_initial
+fit_range_width = options.fit_range_width
+
+plt.figure(figsize=(7,4))
+
+plt.plot(hdu['CHISDSUM'].data['PERIOD'],
+	hdu['CHISDSUM'].data['CHISQRDAVE'])
+
+def fitFunc(x, a, p, s):
+    return a/(s*np.sqrt(2.0*np.pi)) * np.exp(-0.5*((x-p)/s)**2) 
+
+guess = [1.0,peak_initial,sigma_initial]
+fit_min = peak_initial - fit_range_width
+fit_max = peak_initial + fit_range_width
+flag_x = np.logical_and((hdu['CHISDSUM'].data['PERIOD']>fit_min),(hdu['CHISDSUM'].data['PERIOD']<fit_max))
+
+fitParams, fitCovariances = curve_fit(fitFunc, 
+	hdu['CHISDSUM'].data['PERIOD'][flag_x], hdu['CHISDSUM'].data['CHISQRDAVE'][flag_x],
+	guess )
+print fitParams
+print fitCovariances
+sigma = [fitCovariances[0,0], fitCovariances[1,1],fitCovariances[2,2]]
+p_value = fitParams[1]
+p_err = sigma[1]
+
+plt.plot(hdu['CHISDSUM'].data['PERIOD'][flag_x], 
+	fitFunc(hdu['CHISDSUM'].data['PERIOD'][flag_x],fitParams[0],fitParams[1],fitParams[2]),color='r')
+plt.xlabel('Period (sec)')
+plt.ylabel('Chisquare')
+plt.title('Period = %.10f+/-%.10f sec' % (p_value,p_err))
+fout_fit_pdf = fout_ps.replace('.ps','_fit.pdf')
+plt.savefig(fout_fit_pdf)	
+
+cmd  = 'fparkey %.7f %s+1 FITPER add=yes\n' % (p_value,options.outputfits)
+cmd += 'fparkey %.7f %s+1 FITPERRO add=yes\n' % (p_err,options.outputfits)
+print(cmd); os.system(cmd)	
+
+cmd = 'open %s' % (fout_fit_pdf)
+print(cmd);os.system(cmd)
