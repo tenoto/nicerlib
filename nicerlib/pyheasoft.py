@@ -413,7 +413,8 @@ def get_nimissiontime_datett(date_tt):
 def barycentric_correction(evtfile,orbfile,ra,dec,ephem=""):
 	sys.stdout.write('=== %s ===\n' % sys._getframe().f_code.co_name)
 
-	outfile = "%s_bary.evt" % os.path.splitext(evtfile)[0]
+	#outfile = "%s_bary.evt" % os.path.splitext(evtfile)[0]
+	outfile = "%s_bary.evt" % evtfile.replace('.evt.gz','').replace('.evt','')
 	logfile = "%s.log" % os.path.splitext(outfile)[0]
 	cmd  = 'barycorr ra=%.6f dec=%.6f ' % (ra,dec)
 	cmd += 'infile=%s ' % evtfile
