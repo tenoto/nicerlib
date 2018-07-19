@@ -1,0 +1,22 @@
+outpdf: "sgr0501p4516_v180719/o1u20cut/sgr0501p4516_v180719_o1u20cut_fit.pdf"
+title: "NICER SGR_0501+4516"
+xcolumn: "mjd_utc"
+xlabel: "MJD UTC (day) - 58000"
+xerror: ["mjd_width","mjd_width"]
+xoffset: 58000
+xranges: [0,300]
+ycolumns: ["rate0p4to6p0","flux0p4to6p0","NH","kT"]
+yerrors: [["rate0p4to6p0_err","rate0p4to6p0_err"],["flux0p4to6p0_err_min","flux0p4to6p0_err_max"],["NH_err_min","NH_err_max"],["kT_err_min","kT_err_max"]]
+ylabels: ["Rate (cps) [0.4-6.0 keV]","Fx ($10^{-12}$ erg s$^{-1}$ cm$^{-2}$) [0.4-6.0 keV]","NH (10$^{22}$ cm$^{-2}$)","kT (keV)"]
+ynorms: [1.0,1e-12,1.0,1.0]
+yscales: ["linear","linear","linear","linear"]
+yranges: [[0.0,5.0],[0.0,10.0],[0.0,2.0],[0.0,1.5]]
+# ----
+rchi2range: [0.0,10.0]
+# ---- 
+panel_size: [7,3]
+markersize: 6
+# ---- 
+vertical_lines: []
+#2nd glitch MJD 58250-58252 
+#3rd glitch MJD 58261
