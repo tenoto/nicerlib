@@ -264,7 +264,7 @@ cmd += 'lwid 5 \n'
 cmd += 'lwid 5 on 1..100\n'
 cmd += 'time off\n'
 cmd += 'la t %s\n' % title 
-cmd += 'la f %s (obs=black, green=bgd, red=residual)\n' % obsid 
+cmd += 'la f %s (red=obs, green=bgd_model, black=bgd_subtracted)\n' % obsid 
 cmd += 'hard %s/cps\n' % fname_residual_ps
 cmd += 'exit\n'
 cmd += 'data 2 none\n'
